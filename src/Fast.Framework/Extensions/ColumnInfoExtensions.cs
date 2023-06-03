@@ -61,7 +61,7 @@ namespace Fast.Framework.Extensions
         {
             var list = new List<object>();
             // string guid long类型,如果为null或0将自动生成ID
-            var genColumnInfos = columnInfos.Where(w => w.IsPrimaryKey && w.DatabaseGeneratedOption == DatabaseGeneratedOption.Computed && w.PropertyInfo.PropertyType != typeof(int));
+            var genColumnInfos = columnInfos.Where(w => w.DatabaseGeneratedOption == DatabaseGeneratedOption.Computed && w.PropertyInfo.PropertyType != typeof(int));
             foreach (var columnInfo in genColumnInfos)
             {
                 var parameter = dbParameters.First(f => f.ParameterName == columnInfo.ParameterName);
