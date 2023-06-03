@@ -42,7 +42,7 @@ namespace Fast.Framework.Extensions
             foreach (var item in source)
             {
                 var row = dt.NewRow();
-                foreach (var columnInfo in entityInfo.ColumnsInfos)
+                foreach (var columnInfo in columnInfos)
                 {
                     var obj = columnInfo.PropertyInfo.GetValue(item);
 
