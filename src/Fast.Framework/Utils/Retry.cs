@@ -28,7 +28,7 @@ namespace Fast.Framework.Utils
                 try
                 {
                     action.Invoke();
-                    break;
+                    return;
                 }
                 catch (Exception ex)
                 {
@@ -55,7 +55,7 @@ namespace Fast.Framework.Utils
                 try
                 {
                     action.Invoke(args1);
-                    break;
+                    return;
                 }
                 catch (Exception ex)
                 {
