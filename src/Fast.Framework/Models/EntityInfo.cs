@@ -37,6 +37,11 @@ namespace Fast.Framework.Models
         public bool IsAnonymousType { get; set; }
 
         /// <summary>
+        /// 租户ID
+        /// </summary>
+        public string TenantId { get; set; }
+
+        /// <summary>
         /// 表名称
         /// </summary>
         public string TableName { get; set; }
@@ -74,6 +79,7 @@ namespace Fast.Framework.Models
             entityInfo.EntityName = this.EntityName;
             entityInfo.Description = this.Description;
             entityInfo.IsAnonymousType = this.IsAnonymousType;
+            entityInfo.TenantId = this.TenantId;
             entityInfo.TableName = this.TableName;
             entityInfo.Alias = this.Alias;
             entityInfo.ColumnsInfos.AddRange(ColumnsInfos.Select(s => s.Clone()));

@@ -72,7 +72,8 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         public IInsert<T> As(Type type)
         {
-            InsertBuilder.EntityInfo.TableName = type.GetTableName();
+            var entityInfo = type.GetEntityInfo();
+            InsertBuilder.EntityInfo.TableName = entityInfo.TableName;
             return this;
         }
 

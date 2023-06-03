@@ -90,6 +90,11 @@ namespace Fast.Framework.Extensions
 
                 if (!entityInfo.IsAnonymousType)
                 {
+                    var tenantAttribute = type.GetCustomAttribute<TenantAttribute>(false);
+                    if (tenantAttribute != null)
+                    {
+                        entityInfo.TenantId = tenantAttribute.TenantId;
+                    }
                     var descriptionAttribute = type.GetCustomAttribute<DescriptionAttribute>(false);
                     if (descriptionAttribute != null)
                     {
@@ -156,16 +161,16 @@ namespace Fast.Framework.Extensions
             return entityInfoCache.Clone();
         }
 
-        /// <summary>
-        /// 获取表名称
-        /// </summary>
-        /// <param name="type">类型</param>
-        /// <returns></returns>
-        public static string GetTableName(this Type type)
-        {
-            var tableAttribute = type.GetCustomAttribute<TableAttribute>(false);
-            return tableAttribute == null ? type.Name : tableAttribute.Name;
-        }
+        ///// <summary>
+        ///// 获取表名称
+        ///// </summary>
+        ///// <param name="type">类型</param>
+        ///// <returns></returns>
+        //public static string GetTableName(this Type type)
+        //{
+        //    var tableAttribute = type.GetCustomAttribute<TableAttribute>(false);
+        //    return tableAttribute == null ? type.Name : tableAttribute.Name;
+        //}
 
         /// <summary>
         /// 获取版本ID

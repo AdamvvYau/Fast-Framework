@@ -199,13 +199,12 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         public IAdo GetAdoWithAttr<T>() where T : class, new()
         {
-            var type = typeof(T);
-            var tenantAttribute = type.GetCustomAttribute<TenantAttribute>(false);
-            if (tenantAttribute == null)
+            var entityInfo = typeof(T).GetEntityInfo();
+            if (string.IsNullOrWhiteSpace(entityInfo.TenantId))
             {
-                throw new Exception("未获取到TenantAttribute.");
+                throw new Exception("未获取到TenantId.");
             }
-            return GetAdo(tenantAttribute.DbId);
+            return GetAdo(entityInfo.TenantId);
         }
 
         /// <summary>

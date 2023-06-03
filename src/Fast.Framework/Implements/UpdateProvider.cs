@@ -71,7 +71,8 @@ namespace Fast.Framework
         /// <returns></returns>
         public IUpdate<T> As(Type type)
         {
-            UpdateBuilder.EntityInfo.TableName = type.GetTableName();
+            var entityInfo = type.GetEntityInfo();
+            UpdateBuilder.EntityInfo.TableName = entityInfo.TableName;
             return this;
         }
 

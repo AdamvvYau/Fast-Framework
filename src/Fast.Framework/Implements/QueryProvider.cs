@@ -17,6 +17,7 @@ using Fast.Framework.Utils;
 using Fast.Framework.Enum;
 using Fast.Framework.Factory;
 using System.Diagnostics;
+using System.Reflection.PortableExecutable;
 
 namespace Fast.Framework
 {
@@ -308,7 +309,8 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T> As(Type type)
         {
-            QueryBuilder.EntityInfo.TableName = type.GetTableName();
+            var entityInfo = type.GetEntityInfo();
+            QueryBuilder.EntityInfo.TableName = entityInfo.TableName;
             return this;
         }
 
@@ -403,7 +405,6 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T> Where(Expression<Func<T, bool>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
             QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
@@ -425,7 +426,6 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T> Where<Table>(Expression<Func<T, Table, bool>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
             QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
@@ -461,7 +461,6 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T> GroupBy(Expression<Func<T, object>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
             QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
@@ -485,7 +484,6 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法.");
             }
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
 
             QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
@@ -521,7 +519,6 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T> OrderBy(Expression<Func<T, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
             QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
@@ -564,7 +561,6 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
             QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
@@ -598,6 +594,34 @@ namespace Fast.Framework
     public partial class QueryProvider<T>
     {
         /// <summary>
+        /// 函数
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="expression">表达式</param>
+        /// <param name="template">模板</param>
+        private void Func_<TResult>(Expression<Func<T, TResult>> expression, string template)
+        {
+            var result = expression.ResolveSql(new ResolveSqlOptions()
+            {
+                DbType = ado.DbOptions.DbType,
+                ResolveSqlType = ResolveSqlType.NewColumn,
+                IgnoreParameter = true
+            });
+
+            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            {
+                ResolveSqlOptions = new ResolveSqlOptions()
+                {
+                    DbType = ado.DbOptions.DbType,
+                    ResolveSqlType = ResolveSqlType.NewColumn
+                },
+                IsFormat = true,
+                Template = $"{template} AS {result.SqlString}",
+                Expression = expression
+            });
+        }
+
+        /// <summary>
         /// 最小
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
@@ -628,20 +652,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public TResult Min<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.MinTemplate,
-                Expression = expression
-            });
-
+            Func_(expression, QueryBuilder.MinTemplate);
             return this.Select<TResult>().ToList().FirstOrDefault();
         }
 
@@ -652,20 +663,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public async Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.MinTemplate,
-                Expression = expression
-            });
-
+            Func_(expression, QueryBuilder.MinTemplate);
             return (await this.Select<TResult>().ToListAsync()).FirstOrDefault();
         }
 
@@ -700,20 +698,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public TResult Max<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.MaxTemplate,
-                Expression = expression
-            });
-
+            Func_(expression, QueryBuilder.MaxTemplate);
             return this.Select<TResult>().ToList().FirstOrDefault();
         }
 
@@ -724,20 +709,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public async Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.MaxTemplate,
-                Expression = expression
-            });
-
+            Func_(expression, QueryBuilder.MaxTemplate);
             return (await this.Select<TResult>().ToListAsync()).FirstOrDefault();
         }
 
@@ -772,20 +744,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public TResult Sum<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.SumTemplate,
-                Expression = expression
-            });
-
+            Func_(expression, QueryBuilder.SumTemplate);
             return this.Select<TResult>().ToList().FirstOrDefault();
         }
 
@@ -796,20 +755,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public async Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.SumTemplate,
-                Expression = expression
-            });
-
+            Func_(expression, QueryBuilder.SumTemplate);
             return (await this.Select<TResult>().ToListAsync()).FirstOrDefault();
         }
 
@@ -844,20 +790,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public TResult Avg<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.AvgTemplate,
-                Expression = expression
-            });
-
+            Func_(expression, QueryBuilder.AvgTemplate);
             return this.Select<TResult>().ToList().FirstOrDefault();
         }
 
@@ -868,20 +801,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public async Task<TResult> AvgAsync<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.AvgTemplate,
-                Expression = expression
-            });
-
+            Func_(expression, QueryBuilder.AvgTemplate);
             return (await this.Select<TResult>().ToListAsync()).FirstOrDefault();
         }
 
@@ -905,6 +825,24 @@ namespace Fast.Framework
             return (await this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1)).ToListAsync()).FirstOrDefault();
         }
 
+
+        /// <summary>
+        /// 计数
+        /// </summary>
+        /// <param name="expression">表达式</param>
+        private void Count_(Expression<Func<T, bool>> expression)
+        {
+            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            {
+                ResolveSqlOptions = new ResolveSqlOptions()
+                {
+                    DbType = ado.DbOptions.DbType,
+                    ResolveSqlType = ResolveSqlType.Where
+                },
+                Expression = expression
+            });
+        }
+
         /// <summary>
         /// 计数
         /// </summary>
@@ -912,21 +850,8 @@ namespace Fast.Framework
         /// <returns></returns>
         public int Count(Expression<Func<T, bool>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.CountTemplate,
-                Expression = expression
-            });
-
-            return this.Select<int>().ToList().FirstOrDefault();
+            Count_(expression);
+            return this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1)).ToList().FirstOrDefault();
         }
 
         /// <summary>
@@ -936,21 +861,8 @@ namespace Fast.Framework
         /// <returns></returns>
         public async Task<int> CountAsync(Expression<Func<T, bool>> expression)
         {
-            QueryBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
-
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewColumn
-                },
-                IsFormat = true,
-                Template = QueryBuilder.CountTemplate,
-                Expression = expression
-            });
-
-            return (await this.Select<int>().ToListAsync()).FirstOrDefault();
+            Count_(expression);
+            return (await this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1)).ToListAsync()).FirstOrDefault();
         }
     }
     #endregion
@@ -963,6 +875,7 @@ namespace Fast.Framework
     /// <typeparam name="T"></typeparam>
     public partial class QueryProvider<T>
     {
+
         /// <summary>
         /// 第一
         /// </summary>
@@ -1430,7 +1343,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public bool Any(Expression<Func<T, bool>> expression)
         {
-            return this.Count(expression) > 0;
+            return this.Where(expression).Count() > 0;
         }
 
         /// <summary>
@@ -1440,7 +1353,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> expression)
         {
-            return await this.CountAsync(expression) > 0;
+            return await this.Where(expression).CountAsync() > 0;
         }
     }
     #endregion
@@ -1453,6 +1366,7 @@ namespace Fast.Framework
     /// <typeparam name="T"></typeparam>
     public partial class QueryProvider<T>
     {
+
         /// <summary>
         /// 插入
         /// </summary>
@@ -1469,7 +1383,10 @@ namespace Fast.Framework
             });
 
             QueryBuilder.DbParameters.AddRange(result.DbParameters);
-            return Insert(typeof(InsertTable).GetTableName(), result.SqlString);
+
+            var entityInfo = typeof(InsertTable).GetEntityInfo();
+
+            return Insert(ado.DbOptions.DbType.GetIdentifier().Insert(1, entityInfo.TableName), result.SqlString);
         }
 
         /// <summary>
@@ -1488,7 +1405,10 @@ namespace Fast.Framework
             });
 
             QueryBuilder.DbParameters.AddRange(result.DbParameters);
-            return InsertAsync(typeof(InsertTable).GetTableName(), result.SqlString);
+
+            var entityInfo = typeof(InsertTable).GetEntityInfo();
+
+            return InsertAsync(ado.DbOptions.DbType.GetIdentifier().Insert(1, entityInfo.TableName), result.SqlString);
         }
 
         /// <summary>
