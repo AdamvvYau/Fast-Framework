@@ -39,6 +39,11 @@ namespace Fast.Framework.Implements
         private Expression bodyExpression;
 
         /// <summary>
+        /// 是否取反
+        /// </summary>
+        private bool isNot;
+
+        /// <summary>
         /// 构造方法
         /// </summary>
         public ExpressionResolveValue()
@@ -116,6 +121,7 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         private object VisitUnary(UnaryExpression node)
         {
+            isNot = node.NodeType == ExpressionType.Not;
             var value = Visit(node.Operand);
             if (node.NodeType == ExpressionType.Negate)
             {
@@ -325,7 +331,7 @@ namespace Fast.Framework.Implements
             var arguments = new List<object>();
             foreach (var item in node.Arguments)
             {
-                if (item is UnaryExpression)
+                if (item.Type.FullName.StartsWith("System.Linq.Expressions.Expression"))
                 {
                     var unaryExpression = item as UnaryExpression;
                     arguments.Add(unaryExpression.Operand);
@@ -335,15 +341,22 @@ namespace Fast.Framework.Implements
                     arguments.Add(Visit(item));
                 }
             }
+            object result;
             if (node.Object == null)
             {
-                return node.Method.Invoke(this, arguments.ToArray());
+                result = node.Method.Invoke(this, arguments.ToArray());
             }
             else
             {
                 var obj = Visit(node.Object);
-                return node.Method.Invoke(obj, arguments.ToArray());
+                result = node.Method.Invoke(obj, arguments.ToArray());
             }
+            if (result != null && result.GetType().Equals(typeof(bool)) && isNot)
+            {
+                result = !Convert.ToBoolean(result);
+                isNot = false;
+            }
+            return result;
         }
 
         /// <summary>
@@ -414,6 +427,11 @@ namespace Fast.Framework.Implements
             {
                 value = memberInfos.GetValue(value, out var memberName);//获取成员变量值
                 memberInfos.Clear();
+            }
+            if (node.Type.Equals(typeof(bool)) && isNot)
+            {
+                value = !Convert.ToBoolean(value);
+                isNot = false;
             }
             return value;
         }
