@@ -120,6 +120,21 @@ namespace Fast.Framework.Abstract
         public List<FastParameter> DbParameters { get; set; }
 
         /// <summary>
+        /// 强制别名
+        /// </summary>
+        public bool ForceAlias { get; set; }
+
+        /// <summary>
+        /// 父级参数索引
+        /// </summary>
+        public Dictionary<string, int> ParentParameterIndexs { get; set; }
+
+        /// <summary>
+        /// 父级参数计数
+        /// </summary>
+        public int ParentParameterCount { get; set; }
+
+        /// <summary>
         /// 分组
         /// </summary>
         public List<string> GroupBy { get; }
@@ -242,17 +257,38 @@ namespace Fast.Framework.Abstract
         {
             if (!Expressions.ResolveComplete)
             {
+                if (!ForceAlias)
+                {
+                    ForceAlias = Expressions.ExpressionInfos.Exists(e =>
+                    {
+                        var str = e.Expression.ToString();
+                        return str.Contains(".Any");
+                    });
+                }
                 foreach (var item in Expressions.ExpressionInfos)
                 {
-                    item.ResolveSqlOptions.IgnoreParameter = Join.Count == 0;
+                    item.ResolveSqlOptions.IgnoreParameter = Join.Count == 0 && !ForceAlias;
 
-                    item.ResolveSqlOptions.DbParameterStartIndex = DbParameters.Count + 1;
+                    item.ResolveSqlOptions.DbParameterStartIndex = ParentParameterCount + DbParameters.Count + 1;
+
+                    item.ResolveSqlOptions.ParentParameterIndexs = ParentParameterIndexs;
+
+                    if (ParentParameterIndexs != null)
+                    {
+                        item.ResolveSqlOptions.CustomParameterStartIndex += ParentParameterIndexs.Count;
+                    }
 
                     var result = item.Expression.ResolveSql(item.ResolveSqlOptions);
 
                     if (item.IsFormat)
                     {
                         result.SqlString = string.Format(item.Template, result.SqlString);
+                    }
+
+                    if (ForceAlias)
+                    {
+                        var main = result.ParameterIndexs.First();
+                        EntityInfo.Alias = item.ResolveSqlOptions.UseCustomParameter ? $"{item.ResolveSqlOptions.CustomParameterName}{main.Value}" : main.Key;
                     }
 
                     if (item.ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where)
@@ -304,7 +340,6 @@ namespace Fast.Framework.Abstract
                     {
                         this.DbParameters.AddRange(result.DbParameters);
                     }
-
                 }
                 this.Expressions.ResolveComplete = true;
             }
@@ -344,7 +379,7 @@ namespace Fast.Framework.Abstract
             }
             else
             {
-                if (Join.Count == 0)
+                if (Join.Count == 0 && ForceAlias == false)
                 {
                     return identifier.Insert(1, EntityInfo.TableName);
                 }
@@ -395,7 +430,7 @@ namespace Fast.Framework.Abstract
             {
                 var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped);
                 var columnNames = columnInfos.Select(s => s.ColumnName).ToList();
-                var selectValues = columnInfos.Select(s => $"{(Join.Count == 0 ? "" : $"{EntityInfo.Alias}.")}{identifier.Insert(1, s.ColumnName)}").ToList();
+                var selectValues = columnInfos.Select(s => $"{(Join.Count == 0 && !ForceAlias ? "" : $"{EntityInfo.Alias}.")}{identifier.Insert(1, s.ColumnName)}").ToList();
                 if (Join.Count > 0)
                 {
                     Join.ForEach(i =>
@@ -491,6 +526,9 @@ namespace Fast.Framework.Abstract
             queryBuilder.Join.AddRange(this.Join);
             queryBuilder.Where.AddRange(this.Where);
             queryBuilder.DbParameters.AddRange(this.DbParameters);
+            queryBuilder.ParentParameterIndexs = this.ParentParameterIndexs;
+            queryBuilder.ParentParameterCount = this.ParentParameterCount;
+            queryBuilder.ForceAlias = this.ForceAlias;
             queryBuilder.GroupBy.AddRange(this.GroupBy);
             queryBuilder.Having.AddRange(this.Having);
             queryBuilder.OrderBy.AddRange(this.OrderBy);

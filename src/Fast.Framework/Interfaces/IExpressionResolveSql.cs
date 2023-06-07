@@ -18,6 +18,11 @@ namespace Fast.Framework.Interfaces
     {
 
         /// <summary>
+        /// 解析Sql选项
+        /// </summary>
+        ResolveSqlOptions ResolveSqlOptions { get; }
+
+        /// <summary>
         /// 参数索引
         /// </summary>
         Dictionary<string, int> ParameterIndexs { get; }

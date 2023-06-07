@@ -27,11 +27,6 @@ namespace Fast.Framework.Implements
     {
 
         /// <summary>
-        /// 选项
-        /// </summary>
-        private readonly ResolveSqlOptions options;
-
-        /// <summary>
         /// 成员信息
         /// </summary>
         private readonly Stack<MemberInfoEx> memberInfos;
@@ -45,6 +40,11 @@ namespace Fast.Framework.Implements
         /// 体表达式
         /// </summary>
         private Expression bodyExpression;
+
+        /// <summary>
+        /// 解析Sql选项
+        /// </summary>
+        public ResolveSqlOptions ResolveSqlOptions { get; }
 
         /// <summary>
         /// 参数索引
@@ -76,7 +76,7 @@ namespace Fast.Framework.Implements
         /// </summary>
         public ExpressionResolveSql(ResolveSqlOptions options)
         {
-            this.options = options;
+            this.ResolveSqlOptions = options;
             this.memberInfos = new Stack<MemberInfoEx>();
             this.arrayIndexs = new Stack<int>();
 
@@ -155,8 +155,8 @@ namespace Fast.Framework.Implements
             bodyExpression = node.Body;
             foreach (var item in node.Parameters)
             {
-                ParameterIndexs.Add(item.Name, options.CustomParameterStartIndex);
-                options.CustomParameterStartIndex++;
+                ParameterIndexs.Add(item.Name, ResolveSqlOptions.CustomParameterStartIndex);
+                ResolveSqlOptions.CustomParameterStartIndex++;
             }
             return bodyExpression;
         }
@@ -210,14 +210,14 @@ namespace Fast.Framework.Implements
             Visit(node.Left);
 
             #region 解析布尔类型特殊处理
-            if ((options.ResolveSqlType == ResolveSqlType.Where || options.ResolveSqlType == ResolveSqlType.Join || options.ResolveSqlType == ResolveSqlType.Having)
+            if ((ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Join || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Having)
                 && node.Left is not BinaryExpression && node.Left.Type.Equals(typeof(bool))
                 && node.NodeType != ExpressionType.Equal
                 && node.NodeType != ExpressionType.NotEqual
                 && (node.Left.NodeType == ExpressionType.MemberAccess || node.Left.NodeType == ExpressionType.Constant
                 || (node.Left.NodeType == ExpressionType.Not && (node.Left as UnaryExpression).Operand.NodeType != ExpressionType.Call)))
             {
-                if (options.DbType == DbType.PostgreSQL)
+                if (ResolveSqlOptions.DbType == DbType.PostgreSQL)
                 {
                     if (IsNot)
                     {
@@ -247,7 +247,7 @@ namespace Fast.Framework.Implements
             var op = node.NodeType.ExpressionTypeMapping();
 
             #region IS NULL 和 IS NOT NULL 特殊处理
-            if ((options.ResolveSqlType == ResolveSqlType.Where || options.ResolveSqlType == ResolveSqlType.Join || options.ResolveSqlType == ResolveSqlType.Having) && (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual) && node.Right.NodeType == ExpressionType.Constant)
+            if ((ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Join || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Having) && (node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual) && node.Right.NodeType == ExpressionType.Constant)
             {
                 var constantExpression = node.Right as ConstantExpression;
                 if (constantExpression.Value == null)
@@ -266,7 +266,7 @@ namespace Fast.Framework.Implements
             #endregion
 
             #region Sqlite字符串拼接特殊处理
-            if (options.DbType == DbType.SQLite && node.NodeType == ExpressionType.Add)
+            if (ResolveSqlOptions.DbType == DbType.SQLite && node.NodeType == ExpressionType.Add)
             {
                 if (node.Left.Type.Equals(typeof(string)) || node.Right.Type.Equals(typeof(string)))
                 {
@@ -280,14 +280,14 @@ namespace Fast.Framework.Implements
             Visit(node.Right);
 
             #region 解析布尔类型特殊处理
-            if ((options.ResolveSqlType == ResolveSqlType.Where || options.ResolveSqlType == ResolveSqlType.Join || options.ResolveSqlType == ResolveSqlType.Having)
+            if ((ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Join || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Having)
                 && node.Right is not BinaryExpression && node.Right.Type.Equals(typeof(bool))
                 && node.NodeType != ExpressionType.Equal
                 && node.NodeType != ExpressionType.NotEqual
                 && (node.Right.NodeType == ExpressionType.MemberAccess || node.Right.NodeType == ExpressionType.Constant
                 || (node.Right.NodeType == ExpressionType.Not && (node.Right as UnaryExpression).Operand.NodeType != ExpressionType.Call)))
             {
-                if (options.DbType == DbType.PostgreSQL)
+                if (ResolveSqlOptions.DbType == DbType.PostgreSQL)
                 {
                     if (IsNot)
                     {
@@ -352,9 +352,9 @@ namespace Fast.Framework.Implements
             }
             else
             {
-                if (options.DbType.MethodMapping().ContainsKey(node.Method.Name))
+                if (ResolveSqlOptions.DbType.MethodMapping().ContainsKey(node.Method.Name))
                 {
-                    options.DbType.MethodMapping()[node.Method.Name].Invoke(this, node, SqlBuilder);
+                    ResolveSqlOptions.DbType.MethodMapping()[node.Method.Name].Invoke(this, node, SqlBuilder);
                 }
                 else
                 {
@@ -378,7 +378,7 @@ namespace Fast.Framework.Implements
                 #region 解析布尔类型特殊处理
                 if (node.Test.Type.Equals(typeof(bool)))
                 {
-                    if (options.DbType == DbType.PostgreSQL)
+                    if (ResolveSqlOptions.DbType == DbType.PostgreSQL)
                     {
                         if (IsNot)
                         {
@@ -422,33 +422,33 @@ namespace Fast.Framework.Implements
         {
             if (node.Type.Name.StartsWith("<>f__AnonymousType"))
             {
-                var flagAttribute = typeof(ResolveSqlType).GetField(options.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
+                var flagAttribute = typeof(ResolveSqlType).GetField(ResolveSqlOptions.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
                 for (int i = 0; i < node.Members.Count; i++)
                 {
-                    if (options.ResolveSqlType == ResolveSqlType.NewAs)
+                    if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAs)
                     {
                         Visit(node.Arguments[i]);
                         SqlBuilder.Append($" {flagAttribute?.Value} ");
                         var name = node.Members[i].GetCustomAttribute<ColumnAttribute>(false)?.Name;
-                        if (options.IgnoreIdentifier)
+                        if (ResolveSqlOptions.IgnoreIdentifier)
                         {
-                            SqlBuilder.Append(name == null ? node.Members[i].Name : name);
+                            SqlBuilder.Append(name ?? node.Members[i].Name);
                         }
                         else
                         {
-                            SqlBuilder.Append($"{options.DbType.GetIdentifier().Insert(1, name == null ? node.Members[i].Name : name)}");
+                            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? node.Members[i].Name)}");
                         }
                     }
-                    else if (options.ResolveSqlType == ResolveSqlType.NewAssignment)
+                    else if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAssignment)
                     {
                         var name = node.Members[i].GetCustomAttribute<ColumnAttribute>(false)?.Name;
-                        if (options.IgnoreIdentifier)
+                        if (ResolveSqlOptions.IgnoreIdentifier)
                         {
                             SqlBuilder.Append(name == null ? node.Members[i].Name : name);
                         }
                         else
                         {
-                            SqlBuilder.Append($"{options.DbType.GetIdentifier().Insert(1, name == null ? node.Members[i].Name : name)}");
+                            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? node.Members[i].Name)}");
                         }
                         SqlBuilder.Append($" {flagAttribute?.Value} ");
                         Visit(node.Arguments[i]);
@@ -473,36 +473,36 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         private Expression VisitMemberInit(MemberInitExpression node)
         {
-            var flagAttribute = typeof(ResolveSqlType).GetField(options.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
+            var flagAttribute = typeof(ResolveSqlType).GetField(ResolveSqlOptions.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
             for (int i = 0; i < node.Bindings.Count; i++)
             {
                 if (node.Bindings[i].BindingType == MemberBindingType.Assignment)
                 {
                     var memberAssignment = node.Bindings[i] as MemberAssignment;
-                    if (options.ResolveSqlType == ResolveSqlType.NewAs)
+                    if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAs)
                     {
                         Visit(memberAssignment.Expression);
                         var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
                         SqlBuilder.Append($" {flagAttribute?.Value} ");
-                        if (options.IgnoreIdentifier)
+                        if (ResolveSqlOptions.IgnoreIdentifier)
                         {
                             SqlBuilder.Append(name == null ? memberAssignment.Member.Name : name);
                         }
                         else
                         {
-                            SqlBuilder.Append($"{options.DbType.GetIdentifier().Insert(1, name == null ? memberAssignment.Member.Name : name)}");
+                            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? memberAssignment.Member.Name)}");
                         }
                     }
-                    else if (options.ResolveSqlType == ResolveSqlType.NewAssignment)
+                    else if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAssignment)
                     {
                         var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
-                        if (options.IgnoreIdentifier)
+                        if (ResolveSqlOptions.IgnoreIdentifier)
                         {
                             SqlBuilder.Append(name == null ? memberAssignment.Member.Name : name);
                         }
                         else
                         {
-                            SqlBuilder.Append($"{options.DbType.GetIdentifier().Insert(1, name == null ? memberAssignment.Member.Name : name)}");
+                            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? memberAssignment.Member.Name)}");
                         }
                         SqlBuilder.Append($" {flagAttribute?.Value} ");
                         Visit(memberAssignment.Expression);
@@ -597,40 +597,49 @@ namespace Fast.Framework.Implements
                 if (node.Expression.NodeType == ExpressionType.Parameter)
                 {
                     var parameterExpression = (ParameterExpression)node.Expression;
-                    if (!options.IgnoreParameter)
+                    if (!ResolveSqlOptions.IgnoreParameter)
                     {
-                        if (options.IgnoreIdentifier)
+                        var parameterName = "";
+                        if (ParameterIndexs.ContainsKey(parameterExpression.Name))
                         {
-                            SqlBuilder.Append($"{(options.UseCustomParameter ? $"{options.CustomParameterName}{ParameterIndexs[parameterExpression.Name]}" : parameterExpression.Name)}.");
+                            parameterName = ResolveSqlOptions.UseCustomParameter ? $"{ResolveSqlOptions.CustomParameterName}{ParameterIndexs[parameterExpression.Name]}" : parameterExpression.Name;
+                        }
+                        else if (ResolveSqlOptions.ParentParameterIndexs != null && ResolveSqlOptions.ParentParameterIndexs.ContainsKey(parameterExpression.Name))
+                        {
+                            parameterName = ResolveSqlOptions.UseCustomParameter ? $"{ResolveSqlOptions.CustomParameterName}{ResolveSqlOptions.ParentParameterIndexs[parameterExpression.Name]}" : parameterExpression.Name;
+                        }
+                        if (ResolveSqlOptions.IgnoreIdentifier)
+                        {
+                            SqlBuilder.Append($"{parameterName}.");
                         }
                         else
                         {
-                            SqlBuilder.Append($"{options.DbType.GetIdentifier().Insert(1, $"{(options.UseCustomParameter ? $"{options.CustomParameterName}{ParameterIndexs[parameterExpression.Name]}" : parameterExpression.Name)}")}.");
+                            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, $"{parameterName}")}.");
                         }
                     }
-                    var name = node.Member.Name;
-                    if (!options.IgnoreColumnAttribute)
+                    var memberName = node.Member.Name;
+                    if (!ResolveSqlOptions.IgnoreColumnAttribute)
                     {
                         var columnAttribute = node.Member.GetCustomAttribute<ColumnAttribute>(false);
                         if (columnAttribute != null)
                         {
-                            name = columnAttribute.Name;
+                            memberName = columnAttribute.Name;
                         }
                     }
-                    if (options.IgnoreIdentifier)
+                    if (ResolveSqlOptions.IgnoreIdentifier)
                     {
-                        SqlBuilder.Append(name);
+                        SqlBuilder.Append(memberName);
                     }
                     else
                     {
-                        SqlBuilder.Append(options.DbType.GetIdentifier().Insert(1, name));
+                        SqlBuilder.Append(ResolveSqlOptions.DbType.GetIdentifier().Insert(1, memberName));
                     }
 
                     #region 解析布尔类型特殊处理
-                    if ((options.ResolveSqlType == ResolveSqlType.Where || options.ResolveSqlType == ResolveSqlType.Join || options.ResolveSqlType == ResolveSqlType.Having)
+                    if ((ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Join || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Having)
                         && node.Type.Equals(typeof(bool)) && bodyExpression is not BinaryExpression)
                     {
-                        if (options.DbType == DbType.PostgreSQL)
+                        if (ResolveSqlOptions.DbType == DbType.PostgreSQL)
                         {
                             if (IsNot)
                             {
@@ -715,37 +724,37 @@ namespace Fast.Framework.Implements
                         var parameter = DbParameters.FirstOrDefault(f => f.ParameterName.StartsWith($"{memberName}_{i}_"));
                         if (parameter == null)
                         {
-                            var newName = $"{memberName}_{i}_{options.DbParameterStartIndex}";
+                            var newName = $"{memberName}_{i}_{ResolveSqlOptions.DbParameterStartIndex}";
                             parNames.Add(newName);
 
                             parameter = new FastParameter(newName, list[i]);
 
                             DbParameters.Add(parameter);
 
-                            options.DbParameterStartIndex++;
+                            ResolveSqlOptions.DbParameterStartIndex++;
                         }
                         else
                         {
                             parNames.Add(parameter.ParameterName);
                         }
                     }
-                    SqlBuilder.Append(string.Join(",", parNames.Select(s => $"{options.DbType.GetSymbol()}{s}")));
+                    SqlBuilder.Append(string.Join(",", parNames.Select(s => $"{ResolveSqlOptions.DbType.GetSymbol()}{s}")));
                 }
                 else//普通成员变量处理
                 {
                     var parameter = DbParameters.FirstOrDefault(f => f.ParameterName.StartsWith($"{memberName}_"));
                     if (parameter == null)
                     {
-                        var newName = $"{memberName}_{options.DbParameterStartIndex}";
+                        var newName = $"{memberName}_{ResolveSqlOptions.DbParameterStartIndex}";
                         parameter = new FastParameter(newName, value);
                         DbParameters.Add(parameter);
 
-                        SqlBuilder.Append($"{options.DbType.GetSymbol()}{newName}");
-                        options.DbParameterStartIndex++;
+                        SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetSymbol()}{newName}");
+                        ResolveSqlOptions.DbParameterStartIndex++;
                     }
                     else
                     {
-                        SqlBuilder.Append($"{options.DbType.GetSymbol()}{parameter.ParameterName}");
+                        SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetSymbol()}{parameter.ParameterName}");
                     }
                 }
                 memberInfos.Clear();
@@ -754,13 +763,13 @@ namespace Fast.Framework.Implements
             {
                 if (node.Type.Equals(typeof(bool)))
                 {
-                    if ((options.ResolveSqlType == ResolveSqlType.Where || options.ResolveSqlType == ResolveSqlType.Join || options.ResolveSqlType == ResolveSqlType.Having)
+                    if ((ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Join || ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Having)
                         && bodyExpression.NodeType == ExpressionType.Constant)
                     {
                         value = Convert.ToInt32(value);
                         value = $"1 = {value}";
                     }
-                    else if (options.DbType == DbType.PostgreSQL)
+                    else if (ResolveSqlOptions.DbType == DbType.PostgreSQL)
                     {
                         //PostgreSQL 特殊处理 bool转换成大写
                         SqlBuilder.Append(Convert.ToString(value).ToUpper());
@@ -783,12 +792,12 @@ namespace Fast.Framework.Implements
         /// <param name="value">值</param>
         private void GenerateDbParameter(object value)
         {
-            var parameterName = $"Constant_{options.DbParameterStartIndex}";
+            var parameterName = $"Constant_{ResolveSqlOptions.DbParameterStartIndex}";
             var parameter = new FastParameter(parameterName, value);
             DbParameters.Add(parameter);
 
-            SqlBuilder.Append($"{options.DbType.GetSymbol()}{parameterName}");
-            options.DbParameterStartIndex++;
+            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetSymbol()}{parameterName}");
+            ResolveSqlOptions.DbParameterStartIndex++;
         }
 
         /// <summary>

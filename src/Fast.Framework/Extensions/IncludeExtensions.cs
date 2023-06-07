@@ -100,9 +100,6 @@ namespace Fast.Framework.Extensions
         {
             var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
 
-            queryBuilder.EntityInfo.Alias = expression.Parameters[0]?.Name;
-            include.QueryBuilder.IncludeInfos.Last().EntityDbMapping.Alias = expression.Parameters[1]?.Name;
-
             queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
@@ -146,9 +143,6 @@ namespace Fast.Framework.Extensions
         {
             var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
 
-            queryBuilder.EntityInfo.Alias = expression.Parameters[0]?.Name;
-            include.QueryBuilder.IncludeInfos.Last().EntityDbMapping.Alias = expression.Parameters[1]?.Name;
-
             queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
@@ -190,9 +184,6 @@ namespace Fast.Framework.Extensions
         {
             var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
 
-            queryBuilder.EntityInfo.Alias = expression.Parameters[0]?.Name;
-            include.QueryBuilder.IncludeInfos.Last().EntityDbMapping.Alias = expression.Parameters[1]?.Name;
-
             queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
@@ -231,9 +222,6 @@ namespace Fast.Framework.Extensions
         public static IInclude<T, List<TProperty>> ListWhere<T, TProperty>(this IInclude<T, List<TProperty>> include, Expression<Func<T, TProperty, bool>> expression) where TProperty : class
         {
             var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-
-            queryBuilder.EntityInfo.Alias = expression.Parameters[0]?.Name;
-            include.QueryBuilder.IncludeInfos.Last().EntityDbMapping.Alias = expression.Parameters[1]?.Name;
 
             queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
@@ -278,9 +266,6 @@ namespace Fast.Framework.Extensions
         {
             var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
 
-            queryBuilder.EntityInfo.Alias = expression.Parameters[0]?.Name;
-            include.QueryBuilder.IncludeInfos.Last().EntityDbMapping.Alias = expression.Parameters[1]?.Name;
-
             queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
@@ -320,9 +305,6 @@ namespace Fast.Framework.Extensions
         public static IInclude<T, List<TProperty>> ListSelect<T, TProperty>(this IInclude<T, List<TProperty>> include, Expression<Func<T, TProperty, object>> expression) where TProperty : class
         {
             var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-
-            queryBuilder.EntityInfo.Alias = expression.Parameters[0]?.Name;
-            include.QueryBuilder.IncludeInfos.Last().EntityDbMapping.Alias = expression.Parameters[1]?.Name;
 
             queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
             {

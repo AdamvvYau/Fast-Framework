@@ -26,7 +26,7 @@ namespace Fast.Framework.Implements
         /// <summary>
         /// 成员信息
         /// </summary>
-        private Stack<MemberInfoEx> memberInfos;
+        private readonly Stack<MemberInfoEx> memberInfos;
 
         /// <summary>
         /// 数组索引
@@ -323,12 +323,18 @@ namespace Fast.Framework.Implements
         private object VisitMethodCall(MethodCallExpression node)
         {
             var arguments = new List<object>();
-
             foreach (var item in node.Arguments)
             {
-                arguments.Add(Visit(item));
+                if (item is UnaryExpression)
+                {
+                    var unaryExpression = item as UnaryExpression;
+                    arguments.Add(unaryExpression.Operand);
+                }
+                else
+                {
+                    arguments.Add(Visit(item));
+                }
             }
-
             if (node.Object == null)
             {
                 return node.Method.Invoke(this, arguments.ToArray());
@@ -379,11 +385,7 @@ namespace Fast.Framework.Implements
 
             if (node.Expression != null)
             {
-                if (node.Expression.NodeType == ExpressionType.Parameter)
-                {
-                    throw new Exception($"{(node.Expression as ParameterExpression).Name}.{node.Member.Name} 不支持解析Value.");
-                }
-                else if (node.Expression.NodeType == ExpressionType.MemberAccess || node.Expression.NodeType == ExpressionType.Constant)
+                if (node.Expression.NodeType == ExpressionType.MemberAccess || node.Expression.NodeType == ExpressionType.Constant)
                 {
                     memberInfos.Push(new MemberInfoEx()
                     {

@@ -531,6 +531,28 @@ namespace Fast.Framework.Extensions
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
+
+            sqlserverFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            {
+                resolve.ResolveSqlOptions.IgnoreParameter = false;
+
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.ForceAlias = true;
+                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
+
+                var sql = query.QueryBuilder.ToSqlString();
+                if (resolve.IsNot)
+                {
+                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    resolve.IsNot = false;
+                }
+                else
+                {
+                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                }
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+            });
             #endregion
 
             #region 其它
@@ -1084,6 +1106,28 @@ namespace Fast.Framework.Extensions
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
+
+            mysqlFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            {
+                resolve.ResolveSqlOptions.IgnoreParameter = false;
+
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.ForceAlias = true;
+                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
+
+                var sql = query.QueryBuilder.ToSqlString();
+                if (resolve.IsNot)
+                {
+                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    resolve.IsNot = false;
+                }
+                else
+                {
+                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                }
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+            });
             #endregion
 
             #region 其它
@@ -1616,6 +1660,28 @@ namespace Fast.Framework.Extensions
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
+
+            oracleFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            {
+                resolve.ResolveSqlOptions.IgnoreParameter = false;
+
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.ForceAlias = true;
+                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
+
+                var sql = query.QueryBuilder.ToSqlString();
+                if (resolve.IsNot)
+                {
+                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    resolve.IsNot = false;
+                }
+                else
+                {
+                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                }
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+            });
             #endregion
 
             #region 其它
@@ -2128,6 +2194,28 @@ namespace Fast.Framework.Extensions
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
+            });
+
+            pgsqlFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            {
+                resolve.ResolveSqlOptions.IgnoreParameter = false;
+
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.ForceAlias = true;
+                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
+
+                var sql = query.QueryBuilder.ToSqlString();
+                if (resolve.IsNot)
+                {
+                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    resolve.IsNot = false;
+                }
+                else
+                {
+                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                }
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
             #endregion
 
@@ -2655,6 +2743,28 @@ namespace Fast.Framework.Extensions
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
+
+            sqliteFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            {
+                resolve.ResolveSqlOptions.IgnoreParameter = false;
+
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.ForceAlias = true;
+                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
+
+                var sql = query.QueryBuilder.ToSqlString();
+                if (resolve.IsNot)
+                {
+                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    resolve.IsNot = false;
+                }
+                else
+                {
+                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                }
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+            });
             #endregion
 
             #region 其它
@@ -2776,6 +2886,7 @@ namespace Fast.Framework.Extensions
             var result = new ResolveSqlResult();
             var resolveSql = new ExpressionResolveSql(options);
             resolveSql.Visit(expression);
+
             result.SqlString = resolveSql.SqlBuilder.ToString();
             result.ParameterIndexs = resolveSql.ParameterIndexs;
             result.DbParameters = resolveSql.DbParameters;

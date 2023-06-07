@@ -57,5 +57,10 @@ namespace Fast.Framework.Models
         /// 数据库参数开始索引
         /// </summary>
         public int DbParameterStartIndex { get; set; } = 1;
+
+        /// <summary>
+        /// 父级参数索引
+        /// </summary>
+        public Dictionary<string, int> ParentParameterIndexs { get; set; }
     }
 }
