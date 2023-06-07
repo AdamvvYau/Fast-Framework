@@ -534,9 +534,21 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Any", (resolve, method, sqlBuilder) =>
             {
-                resolve.ResolveSqlOptions.IgnoreParameter = false;
-
                 var query = resolve.GetValue.Visit(method.Object) as IQuery;
+
+                foreach (var item in method.Arguments)
+                {
+                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    {
+                        Expression = (item as UnaryExpression).Operand,
+                        ResolveSqlOptions = new ResolveSqlOptions()
+                        {
+                            DbType = resolve.ResolveSqlOptions.DbType,
+                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                        }
+                    });
+                }
+
                 query.QueryBuilder.ForceAlias = true;
                 query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                 query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
@@ -1109,9 +1121,21 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Any", (resolve, method, sqlBuilder) =>
             {
-                resolve.ResolveSqlOptions.IgnoreParameter = false;
-
                 var query = resolve.GetValue.Visit(method.Object) as IQuery;
+
+                foreach (var item in method.Arguments)
+                {
+                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    {
+                        Expression = (item as UnaryExpression).Operand,
+                        ResolveSqlOptions = new ResolveSqlOptions()
+                        {
+                            DbType = resolve.ResolveSqlOptions.DbType,
+                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                        }
+                    });
+                }
+
                 query.QueryBuilder.ForceAlias = true;
                 query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                 query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
@@ -1663,9 +1687,21 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Any", (resolve, method, sqlBuilder) =>
             {
-                resolve.ResolveSqlOptions.IgnoreParameter = false;
-
                 var query = resolve.GetValue.Visit(method.Object) as IQuery;
+
+                foreach (var item in method.Arguments)
+                {
+                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    {
+                        Expression = (item as UnaryExpression).Operand,
+                        ResolveSqlOptions = new ResolveSqlOptions()
+                        {
+                            DbType = resolve.ResolveSqlOptions.DbType,
+                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                        }
+                    });
+                }
+
                 query.QueryBuilder.ForceAlias = true;
                 query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                 query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
@@ -2198,9 +2234,21 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Any", (resolve, method, sqlBuilder) =>
             {
-                resolve.ResolveSqlOptions.IgnoreParameter = false;
-
                 var query = resolve.GetValue.Visit(method.Object) as IQuery;
+
+                foreach (var item in method.Arguments)
+                {
+                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    {
+                        Expression = (item as UnaryExpression).Operand,
+                        ResolveSqlOptions = new ResolveSqlOptions()
+                        {
+                            DbType = resolve.ResolveSqlOptions.DbType,
+                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                        }
+                    });
+                }
+
                 query.QueryBuilder.ForceAlias = true;
                 query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                 query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
@@ -2746,9 +2794,21 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Any", (resolve, method, sqlBuilder) =>
             {
-                resolve.ResolveSqlOptions.IgnoreParameter = false;
-
                 var query = resolve.GetValue.Visit(method.Object) as IQuery;
+
+                foreach (var item in method.Arguments)
+                {
+                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    {
+                        Expression = (item as UnaryExpression).Operand,
+                        ResolveSqlOptions = new ResolveSqlOptions()
+                        {
+                            DbType = resolve.ResolveSqlOptions.DbType,
+                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                        }
+                    });
+                }
+
                 query.QueryBuilder.ForceAlias = true;
                 query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                 query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;

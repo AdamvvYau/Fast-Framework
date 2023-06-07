@@ -262,7 +262,7 @@ namespace Fast.Framework.Abstract
                     ForceAlias = Expressions.ExpressionInfos.Exists(e =>
                     {
                         var str = e.Expression.ToString();
-                        return str.Contains(".Any");
+                        return str.Contains(".Any(");
                     });
                 }
                 foreach (var item in Expressions.ExpressionInfos)
@@ -428,6 +428,11 @@ namespace Fast.Framework.Abstract
             //初始化列
             if (string.IsNullOrWhiteSpace(SelectValue))
             {
+                if (ForceAlias && Expressions.ExpressionInfos.Count == 0)
+                {
+                    EntityInfo.Alias = $"p{ParentParameterIndexs?.Count + 1}";
+                }
+
                 var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped);
                 var columnNames = columnInfos.Select(s => s.ColumnName).ToList();
                 var selectValues = columnInfos.Select(s => $"{(Join.Count == 0 && !ForceAlias ? "" : $"{EntityInfo.Alias}.")}{identifier.Insert(1, s.ColumnName)}").ToList();
