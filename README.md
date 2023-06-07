@@ -617,6 +617,20 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
                   // 联表条件 默认优先匹配主键 其次带有ID结尾的名称
                   var data = db.Query<Category>().Include(i => i.Products).ToList();
   ```
+  
+- Exists查询
+
+  ```c#
+                  var data = db.Query<Product>()
+                      .Where(w => db.Query<Product>().WhereIF(!string.IsNullOrWhiteSpace("测试"), a => a.ProductId == 1).Select(s => 1).Any())
+                      .Select(s => new
+                      {
+                          s.ProductId,
+                          s.ProductCode
+                      }).ToList();
+  ```
+
+  
 
 ##### 八、Lambda表达式
 
