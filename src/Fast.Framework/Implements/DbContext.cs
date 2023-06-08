@@ -828,17 +828,6 @@ namespace Fast.Framework.Implements
         #region 查询
 
         /// <summary>
-        /// 子查询
-        /// </summary>
-        /// <typeparam name="TResult"></typeparam>
-        /// <param name="query">查询对象</param>
-        /// <returns></returns>
-        public TResult SubQuery<TResult>(IQuery query)
-        {
-            return default;
-        }
-
-        /// <summary>
         /// 查询
         /// </summary>
         /// <typeparam name="T"></typeparam>

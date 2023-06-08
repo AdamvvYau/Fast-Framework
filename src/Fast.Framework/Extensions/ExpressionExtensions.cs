@@ -517,7 +517,7 @@ namespace Fast.Framework.Extensions
             sqlserverFunc.Add("In", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" IN ");
+                sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -526,7 +526,7 @@ namespace Fast.Framework.Extensions
             sqlserverFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" NOT IN ");
+                sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -556,13 +556,22 @@ namespace Fast.Framework.Extensions
                 var sql = query.QueryBuilder.ToSqlString();
                 if (resolve.IsNot)
                 {
-                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
                     resolve.IsNot = false;
                 }
                 else
                 {
-                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                    sqlBuilder.Append($"EXISTS ( {sql} )");
                 }
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+            });
+
+            sqlserverFunc.Add("First", (resolve, method, sqlBuilder) =>
+            {
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.IsFirst = true;
+                var sql = query.QueryBuilder.ToSqlString();
+                sqlBuilder.Append($"( {sql} )");
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
             #endregion
@@ -1104,7 +1113,7 @@ namespace Fast.Framework.Extensions
             mysqlFunc.Add("In", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" IN ");
+                sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -1113,7 +1122,7 @@ namespace Fast.Framework.Extensions
             mysqlFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" NOT IN ");
+                sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -1143,15 +1152,25 @@ namespace Fast.Framework.Extensions
                 var sql = query.QueryBuilder.ToSqlString();
                 if (resolve.IsNot)
                 {
-                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
                     resolve.IsNot = false;
                 }
                 else
                 {
-                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                    sqlBuilder.Append($"EXISTS ( {sql} )");
                 }
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
+
+            mysqlFunc.Add("First", (resolve, method, sqlBuilder) =>
+            {
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.IsFirst = true;
+                var sql = query.QueryBuilder.ToSqlString();
+                sqlBuilder.Append($"( {sql} )");
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+            });
+
             #endregion
 
             #region 其它
@@ -1670,7 +1689,7 @@ namespace Fast.Framework.Extensions
             oracleFunc.Add("In", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" IN ");
+                sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -1679,7 +1698,7 @@ namespace Fast.Framework.Extensions
             oracleFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" NOT IN ");
+                sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -1709,13 +1728,22 @@ namespace Fast.Framework.Extensions
                 var sql = query.QueryBuilder.ToSqlString();
                 if (resolve.IsNot)
                 {
-                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
                     resolve.IsNot = false;
                 }
                 else
                 {
-                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                    sqlBuilder.Append($"EXISTS ( {sql} )");
                 }
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+            });
+
+            oracleFunc.Add("First", (resolve, method, sqlBuilder) =>
+            {
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.IsFirst = true;
+                var sql = query.QueryBuilder.ToSqlString();
+                sqlBuilder.Append($"( {sql} )");
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
             #endregion
@@ -2217,7 +2245,7 @@ namespace Fast.Framework.Extensions
             pgsqlFunc.Add("In", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" IN ");
+                sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -2226,7 +2254,7 @@ namespace Fast.Framework.Extensions
             pgsqlFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" NOT IN ");
+                sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -2256,13 +2284,22 @@ namespace Fast.Framework.Extensions
                 var sql = query.QueryBuilder.ToSqlString();
                 if (resolve.IsNot)
                 {
-                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
                     resolve.IsNot = false;
                 }
                 else
                 {
-                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                    sqlBuilder.Append($"EXISTS ( {sql} )");
                 }
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+            });
+
+            pgsqlFunc.Add("First", (resolve, method, sqlBuilder) =>
+            {
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.IsFirst = true;
+                var sql = query.QueryBuilder.ToSqlString();
+                sqlBuilder.Append($"( {sql} )");
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
             #endregion
@@ -2777,7 +2814,7 @@ namespace Fast.Framework.Extensions
             sqliteFunc.Add("In", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" IN ");
+                sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -2786,7 +2823,7 @@ namespace Fast.Framework.Extensions
             sqliteFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
             {
                 resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" NOT IN ");
+                sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
                 resolve.Visit(method.Arguments[1]);
                 sqlBuilder.Append(" )");
@@ -2816,13 +2853,22 @@ namespace Fast.Framework.Extensions
                 var sql = query.QueryBuilder.ToSqlString();
                 if (resolve.IsNot)
                 {
-                    sqlBuilder.Append($" NOT EXISTS ( {sql} )");
+                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
                     resolve.IsNot = false;
                 }
                 else
                 {
-                    sqlBuilder.Append($" EXISTS ( {sql} )");
+                    sqlBuilder.Append($"EXISTS ( {sql} )");
                 }
+                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+            });
+
+            sqliteFunc.Add("First", (resolve, method, sqlBuilder) =>
+            {
+                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                query.QueryBuilder.IsFirst = true;
+                var sql = query.QueryBuilder.ToSqlString();
+                sqlBuilder.Append($"( {sql} )");
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
             #endregion

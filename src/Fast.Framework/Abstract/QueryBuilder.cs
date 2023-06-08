@@ -489,9 +489,9 @@ namespace Fast.Framework.Abstract
             {
                 sb.AppendFormat($"\r\n{OrderByTemplate}", string.Join(",", OrderBy));
             }
-            if (IsFirst && !string.IsNullOrWhiteSpace(FirstTemplate))
+            if (IsFirst && !string.IsNullOrWhiteSpace(FirstTemplate) && Skip == null && Take == null)
             {
-                sb.Append($"\r\n{FirstTemplate}");
+                sb.Append($" {FirstTemplate}");
             }
             var sql = sb.ToString();
             if (IsPage)

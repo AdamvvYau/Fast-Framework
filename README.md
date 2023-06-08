@@ -588,13 +588,10 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
 - Select子查询
 
   ```c#
-                  var subQuery = db.Query<Product>().Where(w => w.ProductId == 1).Select(s => s.ProductName);
-                  var sql1 = db.Query<Product>().Select(s => new Product()
+                  var data = db.Query<Product>().Select(s => new
                   {
-                      Custom1 = db.SubQuery<string>(subQuery)// SubQuery 的泛型是根据你左边赋值的属性类型来定义
-                  }).ToList();
-                  // 这种没有使用new 的 泛型可随意定义 实际作用就是避免 对象属性赋值类型冲突的问题
-                  var sql2 = db.Query<Product>().Select(s => db.SubQuery<string>(subQuery)).ToList();
+                      XX = db.Query<Product>().Select(s => 1).First() //需要注意的是，这里只能返回单一结果
+                  }).First();
   ```
   
 - From子查询

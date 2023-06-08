@@ -326,13 +326,7 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         private Expression VisitMethodCall(MethodCallExpression node)
         {
-            if (node.Method.Name == "SubQuery")
-            {
-                SqlBuilder.Append("( ");
-                Visit(node.Arguments[0]);
-                SqlBuilder.Append(" )");
-            }
-            else if (node.Method.Name.Equals("get_Item") && node.Method.DeclaringType.FullName.StartsWith("System.Collections.Generic"))
+            if (node.Method.Name.Equals("get_Item") && node.Method.DeclaringType.FullName.StartsWith("System.Collections.Generic"))
             {
                 var index = Convert.ToInt32(GetValue.Visit(node.Arguments[0]));
                 var list = GetValue.Visit(node.Object) as IList;
@@ -705,13 +699,7 @@ namespace Fast.Framework.Implements
             if (memberInfos.Count > 0)
             {
                 value = memberInfos.GetValue(value, out var memberName);//获取成员变量值
-                if (value is IQuery)
-                {
-                    var query = value as IQuery;
-                    DbParameters.AddRange(query.QueryBuilder.DbParameters);
-                    SqlBuilder.Append(query.QueryBuilder.ToSqlString());
-                }
-                else if (value is IList)
+                if (value is IList)
                 {
                     if (value.GetType().IsVariableBoundArray)//多维数组判断
                     {

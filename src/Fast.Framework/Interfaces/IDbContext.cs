@@ -99,14 +99,6 @@ namespace Fast.Framework.Interfaces
         #region 查询
 
         /// <summary>
-        /// 子查询
-        /// </summary>
-        /// <typeparam name="TResult"></typeparam>
-        /// <param name="query">查询对象</param>
-        /// <returns></returns>
-        TResult SubQuery<TResult>(IQuery query);
-
-        /// <summary>
         /// 查询
         /// </summary>
         /// <typeparam name="T"></typeparam>
