@@ -834,7 +834,7 @@ namespace Fast.Framework.Implements
         /// <param name="ado">Ado</param>
         /// <param name="subQuery">子查询</param>
         /// <returns></returns>
-        private static IQuery<T> Query<T>(IAdo ado, IQuery<T> subQuery = null) where T : class
+        private static IQuery<T> Query<T>(IAdo ado, IQuery subQuery = null) where T : class
         {
             var type = typeof(T);
             var queryBuilder = BuilderFactory.CreateQueryBuilder(ado.DbOptions.DbType);
@@ -845,7 +845,7 @@ namespace Fast.Framework.Implements
             if (subQuery != null)
             {
                 queryBuilder.IsSubQuery = true;
-                queryBuilder.SubQuerySql = subQuery.ToSqlString();
+                queryBuilder.SubQuerySql = subQuery.QueryBuilder.ToSqlString();
                 queryBuilder.DbParameters.AddRange(subQuery.QueryBuilder.DbParameters);
                 queryBuilder.SelectValue = "*";
             }
@@ -866,12 +866,11 @@ namespace Fast.Framework.Implements
         /// <summary>
         /// 查询
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="subQuery">子查询</param>
         /// <returns></returns>
-        public IQuery<T> Query<T>(IQuery<T> subQuery) where T : class
+        public IQuery<T> Query<T>(IQuery subQuery) where T : class
         {
-            return Query(Ado, subQuery);
+            return Query<T>(Ado, subQuery);
         }
 
         /// <summary>

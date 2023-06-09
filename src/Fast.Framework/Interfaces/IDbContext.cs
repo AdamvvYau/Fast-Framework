@@ -108,10 +108,9 @@ namespace Fast.Framework.Interfaces
         /// <summary>
         /// 查询
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="subQuery">子查询</param>
         /// <returns></returns>
-        IQuery<T> Query<T>(IQuery<T> subQuery) where T : class;
+        IQuery<T> Query<T>(IQuery subQuery) where T : class;
 
         /// <summary>
         /// 联合
