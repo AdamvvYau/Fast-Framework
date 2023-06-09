@@ -627,6 +627,16 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
                       }).ToList();
   ```
 
+- 查询绑定字段（注意 字段必须是公开的，否则绑定外部无法访问，没有意义）
+
+  ```c#
+                  //当某些字段需要参与计算并且不返回前端时推荐用字段绑定，无需从A实体转换到B实体，强烈推荐此方式
+  				var data = db.Query<Product>().Select(s => new Product()
+                  {
+                      _xx = s.ProductName
+                  }).First();
+  ```
+
   
 
 ##### 八、Lambda表达式
