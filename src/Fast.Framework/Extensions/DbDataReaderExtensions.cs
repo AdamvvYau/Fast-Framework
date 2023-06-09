@@ -128,7 +128,7 @@ namespace Fast.Framework.Extensions
                     {
                         var columnInfo = entityInfo.ColumnsInfos.FirstOrDefault(f => f.ColumnName == dbColumns[i].ColumnName);
 
-                        if (columnInfo == null && dbColumns[i].ColumnName == $"fast_args_index_{i}")
+                        if (columnInfo == null && entityInfo.IsAnonymousType && dbColumns[i].ColumnName == $"fast_args_index_{i}")
                         {
                             arguments[i] = Expression.Default(entityInfo.ColumnsInfos[i].PropertyInfo.PropertyType);
                         }

@@ -439,7 +439,7 @@ namespace Fast.Framework.Implements
                         Value = value,
                         Index = i
                     });
-                    SqlBuilder.Append($"{i} AS fast_args_index_{i}");
+                    SqlBuilder.Append($"{i} AS {ResolveSqlOptions.DbType.GetIdentifier().Insert(1, $"fast_args_index_{i}")}");
                 }
                 else
                 {
@@ -493,7 +493,6 @@ namespace Fast.Framework.Implements
         private Expression VisitMemberInit(MemberInitExpression node)
         {
             var flagAttribute = typeof(ResolveSqlType).GetField(ResolveSqlOptions.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
-            var appendComma = 1;
             for (int i = 0; i < node.Bindings.Count; i++)
             {
                 if (node.Bindings[i].BindingType == MemberBindingType.Assignment)
@@ -516,14 +515,10 @@ namespace Fast.Framework.Implements
                             Value = value,
                             Index = i
                         });
+                        SqlBuilder.Append($"{i} AS {ResolveSqlOptions.DbType.GetIdentifier().Insert(1, $"fast_index_{i}")}");
                     }
                     else
                     {
-                        if (appendComma % 2 == 0)
-                        {
-                            SqlBuilder.Append(',');
-                        }
-                        appendComma++;
                         if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAs)
                         {
                             Visit(memberAssignment.Expression);
@@ -556,6 +551,10 @@ namespace Fast.Framework.Implements
                         {
                             SqlBuilder.Append(memberAssignment.Member.Name);
                         }
+                    }
+                    if (i + 1 < node.Bindings.Count)
+                    {
+                        SqlBuilder.Append(',');
                     }
                 }
             }
