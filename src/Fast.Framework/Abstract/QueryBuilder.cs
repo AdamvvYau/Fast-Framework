@@ -40,6 +40,11 @@ namespace Fast.Framework.Abstract
         public List<IncludeInfo> IncludeInfos { get; }
 
         /// <summary>
+        /// 设置成员信息
+        /// </summary>
+        public List<SetMemberInfo> SetMemberInfos { get; }
+
+        /// <summary>
         /// 实体信息
         /// </summary>
         public EntityInfo EntityInfo { get; set; }
@@ -241,6 +246,7 @@ namespace Fast.Framework.Abstract
         {
             Expressions = new ExpressionProvider();
             IncludeInfos = new List<IncludeInfo>();
+            SetMemberInfos = new List<SetMemberInfo>();
             EntityInfo = new EntityInfo();
             DbParameters = new List<FastParameter>();
             Join = new List<JoinInfo>();
@@ -336,10 +342,8 @@ namespace Fast.Framework.Abstract
                         }
                     }
 
-                    if (result.DbParameters.Count > 0)
-                    {
-                        this.DbParameters.AddRange(result.DbParameters);
-                    }
+                    this.DbParameters.AddRange(result.DbParameters);
+                    this.SetMemberInfos.AddRange(result.SetMemberInfos);
                 }
                 this.Expressions.ResolveComplete = true;
             }
@@ -500,6 +504,10 @@ namespace Fast.Framework.Abstract
             }
             else if (Skip != null && Take != null)
             {
+                if (IsFirst)
+                {
+                    Take = 1;
+                }
                 return string.Format(PageTempalte, sql, GetSkipValue(), GetTakeValue());
             }
             return sql;
@@ -515,6 +523,7 @@ namespace Fast.Framework.Abstract
             var queryBuilder = BuilderFactory.CreateQueryBuilder(this.DbType);
             queryBuilder.IsInclude = this.IsInclude;
             queryBuilder.IncludeInfos.AddRange(this.IncludeInfos.Select(s => s.Clone()));
+            queryBuilder.SetMemberInfos.AddRange(this.SetMemberInfos);
             queryBuilder.EntityInfo = this.EntityInfo.Clone();
             queryBuilder.IsSubQuery = this.IsSubQuery;
             queryBuilder.SubQuerySql = this.SubQuerySql;

@@ -38,6 +38,11 @@ namespace Fast.Framework.Interfaces
         List<FastParameter> DbParameters { get; }
 
         /// <summary>
+        /// 设置成员信息
+        /// </summary>
+        List<SetMemberInfo> SetMemberInfos { get; }
+
+        /// <summary>
         /// 获取值
         /// </summary>
         IExpressionResolveValue GetValue { get; }

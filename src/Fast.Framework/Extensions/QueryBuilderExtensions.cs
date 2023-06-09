@@ -248,5 +248,38 @@ namespace Fast.Framework.Extensions
             }
         }
 
+        /// <summary>
+        /// 设置成员数据
+        /// </summary>
+        /// <param name="queryBuilder">查询构建</param>
+        /// <param name="obj">对象</param> 
+        public static void SetMemberData<T>(this QueryBuilder queryBuilder, T obj)
+        {
+            if (obj != null)
+            {
+                var entityInfo = typeof(T).GetEntityInfo();
+                foreach (var item in queryBuilder.SetMemberInfos)
+                {
+                    if (item.Value != null)
+                    {
+                        if (entityInfo.IsAnonymousType)
+                        {
+                            var fieldInfo = entityInfo.EntityType.GetField($"<{item.MemberInfo.Name}>i__Field", BindingFlags.NonPublic | BindingFlags.Instance);
+                            fieldInfo.SetValue(obj, item.Value);
+                        }
+                        else if (item.MemberInfo.MemberType == MemberTypes.Property)
+                        {
+                            var propertyInfo = item.MemberInfo as PropertyInfo;
+                            propertyInfo.SetValue(obj, item.Value);
+                        }
+                        else if (item.MemberInfo.MemberType == MemberTypes.Field)
+                        {
+                            var fieldInfo = item.MemberInfo as FieldInfo;
+                            fieldInfo.SetValue(obj, item.Value);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

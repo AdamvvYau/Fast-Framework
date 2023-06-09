@@ -24,6 +24,11 @@ namespace Fast.Framework.Models
         public List<FastParameter> DbParameters { get; set; }
 
         /// <summary>
+        /// 设置成员信息
+        /// </summary>
+        public List<SetMemberInfo> SetMemberInfos { get; set; }
+
+        /// <summary>
         /// 参数索引
         /// </summary>
         public Dictionary<string, int> ParameterIndexs { get; set; }

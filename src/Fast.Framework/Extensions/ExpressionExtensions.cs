@@ -8,6 +8,7 @@ using Fast.Framework.Models;
 using Fast.Framework.Enum;
 using System.Collections;
 using System.Linq;
+using System.Reflection;
 
 namespace Fast.Framework.Extensions
 {
@@ -27,6 +28,11 @@ namespace Fast.Framework.Extensions
         /// 方法映射
         /// </summary>
         private static readonly Dictionary<DbType, Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>> methodMapping;
+
+        /// <summary>
+        /// 设置成员信息方法映射
+        /// </summary>
+        private static readonly List<string> setMemberInfosMethodMapping;
 
         /// <summary>
         /// 构造方法
@@ -53,6 +59,41 @@ namespace Fast.Framework.Extensions
             };
             methodMapping = new Dictionary<DbType, Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>>();
 
+            setMemberInfosMethodMapping = new List<string>()
+            {
+                nameof(IQuery<object>.First),
+                nameof(IQuery<object>.FirstAsync),
+                nameof(IQuery<object>.ToArray),
+                nameof(IQuery<object>.ToArrayAsync),
+                nameof(IQuery<object>.ToList),
+                nameof(IQuery<object>.ToListAsync),
+                nameof(IQuery<object>.ToPageList),
+                nameof(IQuery<object>.ToPageListAsync),
+                nameof(IQuery<object>.ToDictionary),
+                nameof(IQuery<object>.ToDictionaryAsync),
+                nameof(IQuery<object>.ToDictionaryList),
+                nameof(IQuery<object>.ToDictionaryListAsync),
+                nameof(IQuery<object>.ToDictionaryPageList),
+                nameof(IQuery<object>.ToDictionaryPageListAsync),
+                nameof(IQuery<object>.ToDataTable),
+                nameof(IQuery<object>.ToDataTableAsync),
+                nameof(IQuery<object>.ToDataTablePage),
+                nameof(IQuery<object>.ToDataTablePageAsync),
+                nameof(IQuery<object>.ObjToJson),
+                nameof(IQuery<object>.ObjToJsonAsync),
+                nameof(IQuery<object>.ObjListToJson),
+                nameof(IQuery<object>.ObjListToJsonAsync),
+                nameof(IQuery<object>.ToJsonPageList),
+                nameof(IQuery<object>.ToJsonPageListAsync),
+                nameof(IQuery<object>.MaxAsync),
+                nameof(IQuery<object>.MinAsync),
+                nameof(IQuery<object>.CountAsync),
+                nameof(IQuery<object>.SumAsync),
+                nameof(IQuery<object>.AvgAsync),
+                nameof(IQuery<object>.Insert),
+                nameof(IQuery<object>.InsertAsync)
+            };
+
             var sqlserverFunc = new Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>();
             var mysqlFunc = new Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>();
             var oracleFunc = new Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>();
@@ -62,20 +103,20 @@ namespace Fast.Framework.Extensions
             #region SqlServer 函数
 
             #region 类型转换
-            sqlserverFunc.Add("ToString", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToString", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONVERT( VARCHAR(255),");
 
-                var isDateTime = method.Object != null && method.Object.Type.Equals(typeof(DateTime));
+                var isDateTime = methodCall.Object != null && methodCall.Object.Type.Equals(typeof(DateTime));
 
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
 
                 if (isDateTime)
                 {
                     sqlBuilder.Append(',');
-                    if (method.Arguments.Count > 0)
+                    if (methodCall.Arguments.Count > 0)
                     {
-                        var value = Convert.ToString(resolve.GetValue.Visit(method.Arguments[0]));
+                        var value = Convert.ToString(resolve.GetValue.Visit(methodCall.Arguments[0]));
                         if (value == "yyyy-MM-dd")
                         {
                             value = "23";
@@ -91,140 +132,335 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(120);
                     }
                 }
-                else if (method.Arguments.Count > 0)
+                else if (methodCall.Arguments.Count > 0)
                 {
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                 }
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToDateTime", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToDateTime", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONVERT( DATETIME,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToDecimal", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToDecimal", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONVERT( DECIMAL(10,6),");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToDouble", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToDouble", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONVERT( NUMERIC(10,6),");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToSingle", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToSingle", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONVERT( FLOAT,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToInt32", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToInt32", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONVERT( INT,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToInt64", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToInt64", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONVERT( BIGINT,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToBoolean", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToBoolean", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONVERT( BIT,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToChar", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToChar", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONVERT( CHAR(2),");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
             #endregion
 
             #region 聚合
-            sqlserverFunc.Add("Max", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MAX");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MaxTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MAX");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            sqlserverFunc.Add("Min", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MIN");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MinTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MIN");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            sqlserverFunc.Add("Count", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("COUNT");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    if (methodCall.Arguments.Count > 0)
+                    {
+                        foreach (var item in methodCall.Arguments)
+                        {
+                            if (item is UnaryExpression)
+                            {
+                                var unaryExpression = item as UnaryExpression;
+                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                                {
+                                    Expression = unaryExpression.Operand,
+                                    ResolveSqlOptions = new ResolveSqlOptions()
+                                    {
+                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                        DbType = resolve.ResolveSqlOptions.DbType
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                var value = resolve.GetValue.Visit(item);
+                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("COUNT");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            sqlserverFunc.Add("Sum", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("SUM");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.SumTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("SUM");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            sqlserverFunc.Add("Avg", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("AVG");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.AvgTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("AVG");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
             #endregion
 
             #region 数学
-            sqlserverFunc.Add("Abs", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Abs", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ABS");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Round", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Round", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ROUND");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
 
-                if (method.Arguments.Count > 1)
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                 }
                 sqlBuilder.Append(" )");
             });
             #endregion
 
             #region 字符串
-            sqlserverFunc.Add("StartsWith", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("StartsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -234,13 +470,13 @@ namespace Fast.Framework.Extensions
                 {
                     sqlBuilder.Append(" LIKE ");
                 }
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("+'%'");
             });
 
-            sqlserverFunc.Add("EndsWith", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("EndsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -251,14 +487,14 @@ namespace Fast.Framework.Extensions
                     sqlBuilder.Append(" LIKE ");
                 }
                 sqlBuilder.Append("'%'+");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            sqlserverFunc.Add("Contains", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Contains", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Object != null && method.Object.Type.FullName.StartsWith("System.Collections.Generic"))
+                if (methodCall.Object != null && methodCall.Object.Type.FullName.StartsWith("System.Collections.Generic"))
                 {
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -269,12 +505,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     sqlBuilder.Append(" )");
                 }
-                else if (method.Method.DeclaringType.Equals(typeof(Enumerable)))
+                else if (methodCall.Method.DeclaringType.Equals(typeof(Enumerable)))
                 {
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -285,12 +521,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append(" )");
                 }
                 else
                 {
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT LIKE ");
@@ -301,88 +537,88 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" LIKE ");
                     }
                     sqlBuilder.Append("'%'+");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append("+'%'");
                 }
             });
 
-            sqlserverFunc.Add("Substring", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Substring", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("SUBSTRING");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
-                if (method.Arguments.Count > 1)
+                resolve.Visit(methodCall.Arguments[0]);
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                 }
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Replace", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Replace", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("REPLACE");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Len", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Len", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LEN");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("TrimStart", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("TrimStart", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LTRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("TrimEnd", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("TrimEnd", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("RTRIM ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToUpper", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToUpper", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("UPPER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("ToLower", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("ToLower", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LOWER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Concat", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Concat", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONCAT");
                 sqlBuilder.Append("( ");
-                for (int i = 0; i < method.Arguments.Count; i++)
+                for (int i = 0; i < methodCall.Arguments.Count; i++)
                 {
-                    resolve.Visit(method.Arguments[i]);
-                    if (method.Arguments.Count > 1)
+                    resolve.Visit(methodCall.Arguments[i]);
+                    if (methodCall.Arguments.Count > 1)
                     {
-                        if (i + 1 < method.Arguments.Count)
+                        if (i + 1 < methodCall.Arguments.Count)
                         {
                             sqlBuilder.Append(',');
                         }
@@ -391,21 +627,21 @@ namespace Fast.Framework.Extensions
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Format", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Format", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Type.Equals(typeof(string)))
+                if (methodCall.Type.Equals(typeof(string)))
                 {
-                    var formatStr = Convert.ToString(resolve.GetValue.Visit(method.Arguments[0]));
+                    var formatStr = Convert.ToString(resolve.GetValue.Visit(methodCall.Arguments[0]));
                     var list = new List<object>();
-                    for (int i = 1; i < method.Arguments.Count; i++)
+                    for (int i = 1; i < methodCall.Arguments.Count; i++)
                     {
-                        list.Add(resolve.GetValue.Visit(method.Arguments[i]));
+                        list.Add(resolve.GetValue.Visit(methodCall.Arguments[i]));
                     }
                     sqlBuilder.AppendFormat($"'{formatStr}'", list.ToArray());
                 }
                 else
                 {
-                    throw new NotImplementedException($"{method.Type.Name}类型Format方法暂未实现.");
+                    throw new NotImplementedException($"{methodCall.Type.Name}类型Format方法暂未实现.");
                 }
             });
 
@@ -413,130 +649,130 @@ namespace Fast.Framework.Extensions
 
             #region 日期
 
-            sqlserverFunc.Add("DateDiff", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("DateDiff", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEDIFF( ");
-                sqlBuilder.Append(resolve.GetValue.Visit(method.Arguments[0]));
+                sqlBuilder.Append(resolve.GetValue.Visit(methodCall.Arguments[0]));
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[2]);
+                resolve.Visit(methodCall.Arguments[2]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("AddYears", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("AddYears", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEADD( YEAR,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("AddMonths", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("AddMonths", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEADD( MONTH,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("AddDays", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("AddDays", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEADD( DAY,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("AddHours", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("AddHours", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEADD( HOUR,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("AddMinutes", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("AddMinutes", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEADD( MINUTE,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("AddSeconds", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("AddSeconds", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEADD( SECOND,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("AddMilliseconds", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("AddMilliseconds", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEADD( MILLISECOND,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Year", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Year", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("YEAR");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Month", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Month", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("MONTH");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Day", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Day", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DAY");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
             #endregion
 
             #region 查询
-            sqlserverFunc.Add("In", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("In", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("NotIn", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
 
-                foreach (var item in method.Arguments)
+                foreach (var item in methodCall.Arguments)
                 {
                     query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
                     {
@@ -566,9 +802,9 @@ namespace Fast.Framework.Extensions
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
 
-            sqlserverFunc.Add("First", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
                 query.QueryBuilder.IsFirst = true;
                 var sql = query.QueryBuilder.ToSqlString();
                 sqlBuilder.Append($"( {sql} )");
@@ -577,72 +813,72 @@ namespace Fast.Framework.Extensions
             #endregion
 
             #region 其它
-            sqlserverFunc.Add("Operation", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Operation", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append($" {resolve.GetValue.Visit(method.Arguments[1])} ");
-                resolve.Visit(method.Arguments[2]);
+                resolve.Visit(methodCall.Arguments[0]);
+                sqlBuilder.Append($" {resolve.GetValue.Visit(methodCall.Arguments[1])} ");
+                resolve.Visit(methodCall.Arguments[2]);
             });
 
-            sqlserverFunc.Add("NewGuid", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("NewGuid", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append("NEWID()");
             });
 
-            sqlserverFunc.Add("Equals", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Equals", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" = ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            sqlserverFunc.Add("IsNull", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("IsNull", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ISNULL ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            sqlserverFunc.Add("Case", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Case", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            sqlserverFunc.Add("CaseWhen", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("CaseWhen", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE WHEN ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            sqlserverFunc.Add("When", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("When", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" WHEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            sqlserverFunc.Add("Then", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Then", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" THEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            sqlserverFunc.Add("Else", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("Else", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" ELSE ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            sqlserverFunc.Add("End", (resolve, method, sqlBuilder) =>
+            sqlserverFunc.Add("End", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" END");
             });
             #endregion
@@ -652,20 +888,20 @@ namespace Fast.Framework.Extensions
             #region MySql 函数
 
             #region 类型转换
-            mysqlFunc.Add("ToString", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToString", (resolve, methodCall, sqlBuilder) =>
             {
-                var isDateTime = method.Object != null && method.Object.Type.Equals(typeof(DateTime));
+                var isDateTime = methodCall.Object != null && methodCall.Object.Type.Equals(typeof(DateTime));
                 if (isDateTime)
                 {
                     sqlBuilder.Append("DATE_FORMAT( ");
 
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
 
                     sqlBuilder.Append(',');
 
-                    if (method.Arguments.Count > 0)
+                    if (methodCall.Arguments.Count > 0)
                     {
-                        var value = Convert.ToString(resolve.GetValue.Visit(method.Arguments[0]));
+                        var value = Convert.ToString(resolve.GetValue.Visit(methodCall.Arguments[0]));
                         if (value == "yyyy-MM-dd")
                         {
                             value = "%Y-%m-%d";
@@ -685,135 +921,330 @@ namespace Fast.Framework.Extensions
                 else
                 {
                     sqlBuilder.Append("CAST( ");
-                    resolve.Visit(method.Object);
-                    if (method.Arguments.Count > 0)
+                    resolve.Visit(methodCall.Object);
+                    if (methodCall.Arguments.Count > 0)
                     {
-                        resolve.Visit(method.Arguments[0]);
+                        resolve.Visit(methodCall.Arguments[0]);
                     }
                     sqlBuilder.Append(" AS CHAR(510) )");
                 }
             });
 
-            mysqlFunc.Add("ToDateTime", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToDateTime", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS DATETIME )");
             });
 
-            mysqlFunc.Add("ToDecimal", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToDecimal", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS DECIMAL(10,6) )");
             });
 
-            mysqlFunc.Add("ToDouble", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToDouble", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS DECIMAL(10,6) )");
             });
 
-            mysqlFunc.Add("ToInt32", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToInt32", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS DECIMAL(10) )");
             });
 
-            mysqlFunc.Add("ToInt64", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToInt64", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS DECIMAL(19) )");
             });
 
-            mysqlFunc.Add("ToBoolean", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToBoolean", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS UNSIGNED )");
             });
 
-            mysqlFunc.Add("ToChar", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToChar", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS CHAR(2) )");
             });
             #endregion
 
             #region 聚合
-            mysqlFunc.Add("Max", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MAX");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MaxTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MAX");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            mysqlFunc.Add("Min", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MIN");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MinTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MIN");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            mysqlFunc.Add("Count", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("COUNT");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    if (methodCall.Arguments.Count > 0)
+                    {
+                        foreach (var item in methodCall.Arguments)
+                        {
+                            if (item is UnaryExpression)
+                            {
+                                var unaryExpression = item as UnaryExpression;
+                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                                {
+                                    Expression = unaryExpression.Operand,
+                                    ResolveSqlOptions = new ResolveSqlOptions()
+                                    {
+                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                        DbType = resolve.ResolveSqlOptions.DbType
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                var value = resolve.GetValue.Visit(item);
+                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("COUNT");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            mysqlFunc.Add("Sum", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("SUM");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.SumTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("SUM");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            mysqlFunc.Add("Avg", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("AVG");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.AvgTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("AVG");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
             #endregion
 
             #region 数学
-            mysqlFunc.Add("Abs", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Abs", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ABS");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Round", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Round", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ROUND");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
 
-                if (method.Arguments.Count > 1)
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                 }
                 sqlBuilder.Append(" )");
             });
             #endregion
 
             #region 字符串
-            mysqlFunc.Add("StartsWith", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("StartsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -824,13 +1255,13 @@ namespace Fast.Framework.Extensions
                     sqlBuilder.Append(" LIKE ");
                 }
                 sqlBuilder.Append("CONCAT( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" ,'%' )");
             });
 
-            mysqlFunc.Add("EndsWith", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("EndsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -841,15 +1272,15 @@ namespace Fast.Framework.Extensions
                     sqlBuilder.Append(" LIKE ");
                 }
                 sqlBuilder.Append("CONCAT( '%',");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Contains", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Contains", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Object != null && method.Object.Type.FullName.StartsWith("System.Collections.Generic"))
+                if (methodCall.Object != null && methodCall.Object.Type.FullName.StartsWith("System.Collections.Generic"))
                 {
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -860,12 +1291,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     sqlBuilder.Append(" )");
                 }
-                else if (method.Method.DeclaringType.Equals(typeof(Enumerable)))
+                else if (methodCall.Method.DeclaringType.Equals(typeof(Enumerable)))
                 {
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -876,12 +1307,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append(" )");
                 }
                 else
                 {
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT LIKE ");
@@ -892,96 +1323,96 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" LIKE ");
                     }
                     sqlBuilder.Append("CONCAT( '%',");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append(",'%' )");
                 }
             });
 
-            mysqlFunc.Add("Substring", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Substring", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("SUBSTRING");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
-                if (method.Arguments.Count > 1)
+                resolve.Visit(methodCall.Arguments[0]);
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                 }
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Replace", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Replace", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("REPLACE");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Length", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Length", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LENGTH");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Trim", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Trim", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("TRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("TrimStart", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("TrimStart", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LTRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("TrimEnd", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("TrimEnd", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("RTRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("ToUpper", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToUpper", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("UPPER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("ToLower", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("ToLower", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LOWER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Concat", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Concat", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONCAT");
                 sqlBuilder.Append("( ");
-                for (int i = 0; i < method.Arguments.Count; i++)
+                for (int i = 0; i < methodCall.Arguments.Count; i++)
                 {
-                    resolve.Visit(method.Arguments[i]);
-                    if (method.Arguments.Count > 1)
+                    resolve.Visit(methodCall.Arguments[i]);
+                    if (methodCall.Arguments.Count > 1)
                     {
-                        if (i + 1 < method.Arguments.Count)
+                        if (i + 1 < methodCall.Arguments.Count)
                         {
                             sqlBuilder.Append(',');
                         }
@@ -990,149 +1421,149 @@ namespace Fast.Framework.Extensions
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Format", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Format", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Type.Equals(typeof(string)))
+                if (methodCall.Type.Equals(typeof(string)))
                 {
-                    var formatStr = Convert.ToString(resolve.GetValue.Visit(method.Arguments[0]));
+                    var formatStr = Convert.ToString(resolve.GetValue.Visit(methodCall.Arguments[0]));
                     var list = new List<object>();
-                    for (int i = 1; i < method.Arguments.Count; i++)
+                    for (int i = 1; i < methodCall.Arguments.Count; i++)
                     {
-                        list.Add(resolve.GetValue.Visit(method.Arguments[i]));
+                        list.Add(resolve.GetValue.Visit(methodCall.Arguments[i]));
                     }
                     sqlBuilder.AppendFormat($"'{formatStr}'", list.ToArray());
                 }
                 else
                 {
-                    throw new NotImplementedException($"{method.Type.Name}类型Format方法暂未实现.");
+                    throw new NotImplementedException($"{methodCall.Type.Name}类型Format方法暂未实现.");
                 }
             });
 
             #endregion
 
             #region 日期
-            mysqlFunc.Add("DateDiff", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("DateDiff", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEDIFF( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[2]);
+                resolve.Visit(methodCall.Arguments[2]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("AddYears", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("AddYears", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATE_ADD( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",INTERVAL ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" YEAR )");
             });
 
-            mysqlFunc.Add("AddMonths", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("AddMonths", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATE_ADD( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",INTERVAL ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" MONTH )");
             });
 
-            mysqlFunc.Add("AddDays", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("AddDays", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATE_ADD( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",INTERVAL ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" DAY )");
             });
 
-            mysqlFunc.Add("AddHours", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("AddHours", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATE_ADD( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",INTERVAL ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" HOUR )");
             });
 
-            mysqlFunc.Add("AddMinutes", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("AddMinutes", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATE_ADD( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",INTERVAL ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" MINUTE )");
             });
 
-            mysqlFunc.Add("AddSeconds", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("AddSeconds", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATE_ADD( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",INTERVAL ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" SECOND )");
             });
 
-            mysqlFunc.Add("AddMilliseconds", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("AddMilliseconds", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATEADD( MINUTE_SECOND,");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Year", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Year", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("YEAR");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Month", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Month", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("MONTH");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Day", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Day", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DAY");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
             #endregion
 
             #region 查询
-            mysqlFunc.Add("In", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("In", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("NotIn", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
 
-                foreach (var item in method.Arguments)
+                foreach (var item in methodCall.Arguments)
                 {
                     query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
                     {
@@ -1162,9 +1593,9 @@ namespace Fast.Framework.Extensions
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
 
-            mysqlFunc.Add("First", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
                 query.QueryBuilder.IsFirst = true;
                 var sql = query.QueryBuilder.ToSqlString();
                 sqlBuilder.Append($"( {sql} )");
@@ -1174,72 +1605,72 @@ namespace Fast.Framework.Extensions
             #endregion
 
             #region 其它
-            mysqlFunc.Add("Operation", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Operation", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append($" {resolve.GetValue.Visit(method.Arguments[1])} ");
-                resolve.Visit(method.Arguments[2]);
+                resolve.Visit(methodCall.Arguments[0]);
+                sqlBuilder.Append($" {resolve.GetValue.Visit(methodCall.Arguments[1])} ");
+                resolve.Visit(methodCall.Arguments[2]);
             });
 
-            mysqlFunc.Add("NewGuid", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("NewGuid", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append("UUID()");
             });
 
-            mysqlFunc.Add("Equals", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Equals", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" = ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            mysqlFunc.Add("IfNull", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("IfNull", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("IFNULL");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            mysqlFunc.Add("Case", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Case", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            mysqlFunc.Add("CaseWhen", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("CaseWhen", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE WHEN ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            mysqlFunc.Add("When", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("When", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" WHEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            mysqlFunc.Add("Then", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Then", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" THEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            mysqlFunc.Add("Else", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("Else", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" ELSE ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            mysqlFunc.Add("End", (resolve, method, sqlBuilder) =>
+            mysqlFunc.Add("End", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" END");
             });
             #endregion
@@ -1249,21 +1680,21 @@ namespace Fast.Framework.Extensions
             #region Oracle 函数
 
             #region 类型转换
-            oracleFunc.Add("ToString", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToString", (resolve, methodCall, sqlBuilder) =>
             {
-                var isDateTime = method.Object != null && method.Object.Type.Equals(typeof(DateTime));
+                var isDateTime = methodCall.Object != null && methodCall.Object.Type.Equals(typeof(DateTime));
 
                 if (isDateTime)
                 {
                     sqlBuilder.Append("TO_CHAR( ");
 
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
 
                     sqlBuilder.Append(',');
 
-                    if (method.Arguments.Count > 0)
+                    if (methodCall.Arguments.Count > 0)
                     {
-                        resolve.Visit(method.Arguments[0]);
+                        resolve.Visit(methodCall.Arguments[0]);
                     }
                     else
                     {
@@ -1275,11 +1706,11 @@ namespace Fast.Framework.Extensions
                 {
                     sqlBuilder.Append("CAST( ");
 
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
 
-                    if (method.Arguments.Count > 0)
+                    if (methodCall.Arguments.Count > 0)
                     {
-                        resolve.Visit(method.Arguments[0]);
+                        resolve.Visit(methodCall.Arguments[0]);
                     }
                     sqlBuilder.Append(" AS ");
                     sqlBuilder.Append("VARCHAR(255)");
@@ -1287,72 +1718,72 @@ namespace Fast.Framework.Extensions
                 }
             });
 
-            oracleFunc.Add("ToDateTime", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToDateTime", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("TO_TIMESTAMP");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(",'yyyy-mm-dd hh24:mi:ss.ff' )");
             });
 
-            oracleFunc.Add("ToDecimal", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToDecimal", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS ");
                 sqlBuilder.Append("DECIMAL(10,6)");
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("ToDouble", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToDouble", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS ");
                 sqlBuilder.Append("NUMBER(10,6)");
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("ToSingle", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToSingle", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS ");
                 sqlBuilder.Append("FLOAT");
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("ToInt32", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToInt32", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS ");
                 sqlBuilder.Append("INT");
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("ToInt64", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToInt64", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS ");
                 sqlBuilder.Append("NUMBER");
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("ToBoolean", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToBoolean", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS ");
                 sqlBuilder.Append("CHAR(1)");
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("ToChar", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToChar", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS ");
                 sqlBuilder.Append("CHAR(2)");
                 sqlBuilder.Append(" )");
@@ -1360,75 +1791,270 @@ namespace Fast.Framework.Extensions
             #endregion
 
             #region 聚合
-            oracleFunc.Add("Max", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MAX");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MaxTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MAX");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            oracleFunc.Add("Min", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MIN");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MinTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MIN");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            oracleFunc.Add("Count", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("COUNT");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    if (methodCall.Arguments.Count > 0)
+                    {
+                        foreach (var item in methodCall.Arguments)
+                        {
+                            if (item is UnaryExpression)
+                            {
+                                var unaryExpression = item as UnaryExpression;
+                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                                {
+                                    Expression = unaryExpression.Operand,
+                                    ResolveSqlOptions = new ResolveSqlOptions()
+                                    {
+                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                        DbType = resolve.ResolveSqlOptions.DbType
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                var value = resolve.GetValue.Visit(item);
+                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("COUNT");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            oracleFunc.Add("Sum", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("SUM");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.SumTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("SUM");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            oracleFunc.Add("Avg", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("AVG");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.AvgTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("AVG");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
             #endregion
 
             #region 数学
-            oracleFunc.Add("Abs", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Abs", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ABS");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Round", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Round", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ROUND");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
 
-                if (method.Arguments.Count > 1)
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                 }
                 sqlBuilder.Append(" )");
             });
             #endregion
 
             #region 字符串
-            oracleFunc.Add("StartsWith", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("StartsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -1439,13 +2065,13 @@ namespace Fast.Framework.Extensions
                     sqlBuilder.Append(" LIKE ");
                 }
                 sqlBuilder.Append("CONCAT( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" ,'%' )");
             });
 
-            oracleFunc.Add("EndsWith", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("EndsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -1456,15 +2082,15 @@ namespace Fast.Framework.Extensions
                     sqlBuilder.Append(" LIKE ");
                 }
                 sqlBuilder.Append("CONCAT( '%',");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Contains", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Contains", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Object != null && method.Object.Type.FullName.StartsWith("System.Collections.Generic"))
+                if (methodCall.Object != null && methodCall.Object.Type.FullName.StartsWith("System.Collections.Generic"))
                 {
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -1475,12 +2101,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     sqlBuilder.Append(" )");
                 }
-                else if (method.Method.DeclaringType.Equals(typeof(Enumerable)))
+                else if (methodCall.Method.DeclaringType.Equals(typeof(Enumerable)))
                 {
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -1491,12 +2117,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append(" )");
                 }
                 else
                 {
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT LIKE ");
@@ -1507,96 +2133,96 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" LIKE ");
                     }
                     sqlBuilder.Append("CONCAT( '%',");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append(",'%' )");
                 }
             });
 
-            oracleFunc.Add("Substring", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Substring", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("SUBSTRING");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
-                if (method.Arguments.Count > 1)
+                resolve.Visit(methodCall.Arguments[0]);
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                 }
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Replace", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Replace", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("REPLACE");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Length", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Length", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LENGTH");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Trim", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Trim", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("TRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("TrimStart", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("TrimStart", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LTRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("TrimEnd", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("TrimEnd", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("RTRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("ToUpper", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToUpper", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("UPPER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("ToLower", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("ToLower", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LOWER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Concat", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Concat", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONCAT");
                 sqlBuilder.Append("( ");
-                for (int i = 0; i < method.Arguments.Count; i++)
+                for (int i = 0; i < methodCall.Arguments.Count; i++)
                 {
-                    resolve.Visit(method.Arguments[i]);
-                    if (method.Arguments.Count > 1)
+                    resolve.Visit(methodCall.Arguments[i]);
+                    if (methodCall.Arguments.Count > 1)
                     {
-                        if (i + 1 < method.Arguments.Count)
+                        if (i + 1 < methodCall.Arguments.Count)
                         {
                             sqlBuilder.Append(',');
                         }
@@ -1605,21 +2231,21 @@ namespace Fast.Framework.Extensions
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Format", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Format", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Type.Equals(typeof(string)))
+                if (methodCall.Type.Equals(typeof(string)))
                 {
-                    var formatStr = Convert.ToString(resolve.GetValue.Visit(method.Arguments[0]));
+                    var formatStr = Convert.ToString(resolve.GetValue.Visit(methodCall.Arguments[0]));
                     var list = new List<object>();
-                    for (int i = 1; i < method.Arguments.Count; i++)
+                    for (int i = 1; i < methodCall.Arguments.Count; i++)
                     {
-                        list.Add(resolve.GetValue.Visit(method.Arguments[i]));
+                        list.Add(resolve.GetValue.Visit(methodCall.Arguments[i]));
                     }
                     sqlBuilder.AppendFormat($"'{formatStr}'", list.ToArray());
                 }
                 else
                 {
-                    throw new NotImplementedException($"{method.Type.Name}类型Format方法暂未实现.");
+                    throw new NotImplementedException($"{methodCall.Type.Name}类型Format方法暂未实现.");
                 }
             });
 
@@ -1627,88 +2253,88 @@ namespace Fast.Framework.Extensions
 
             #region 日期
 
-            //oracleFunc.Add("AddYears", (resolve, method, sqlBuilder) =>
+            //oracleFunc.Add("AddYears", (resolve, methodCall, sqlBuilder) =>
             //{
 
             //});
 
-            //oracleFunc.Add("AddMonths", (resolve, method, sqlBuilder) =>
+            //oracleFunc.Add("AddMonths", (resolve, methodCall, sqlBuilder) =>
             //{
 
             //});
 
-            //oracleFunc.Add("AddDays", (resolve, method, sqlBuilder) =>
+            //oracleFunc.Add("AddDays", (resolve, methodCall, sqlBuilder) =>
             //{
 
             //});
 
-            //oracleFunc.Add("AddHours", (resolve, method, sqlBuilder) =>
+            //oracleFunc.Add("AddHours", (resolve, methodCall, sqlBuilder) =>
             //{
 
             //});
 
-            //oracleFunc.Add("AddMinutes", (resolve, method, sqlBuilder) =>
+            //oracleFunc.Add("AddMinutes", (resolve, methodCall, sqlBuilder) =>
             //{
 
             //});
 
-            //oracleFunc.Add("AddSeconds", (resolve, method, sqlBuilder) =>
+            //oracleFunc.Add("AddSeconds", (resolve, methodCall, sqlBuilder) =>
             //{
 
             //});
 
-            //oracleFunc.Add("AddMilliseconds", (resolve, method, sqlBuilder) =>
+            //oracleFunc.Add("AddMilliseconds", (resolve, methodCall, sqlBuilder) =>
             //{
 
             //});
 
-            oracleFunc.Add("Year", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Year", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("EXTRACT( YEAR FROM ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Month", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Month", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("EXTRACT( MONTH FROM ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Day", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Day", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("EXTRACT( DAY FROM ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
             #endregion
 
             #region 查询
-            oracleFunc.Add("In", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("In", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("NotIn", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
 
-                foreach (var item in method.Arguments)
+                foreach (var item in methodCall.Arguments)
                 {
                     query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
                     {
@@ -1738,9 +2364,9 @@ namespace Fast.Framework.Extensions
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
 
-            oracleFunc.Add("First", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
                 query.QueryBuilder.IsFirst = true;
                 var sql = query.QueryBuilder.ToSqlString();
                 sqlBuilder.Append($"( {sql} )");
@@ -1749,66 +2375,66 @@ namespace Fast.Framework.Extensions
             #endregion
 
             #region 其它
-            oracleFunc.Add("Operation", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Operation", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append($" {resolve.GetValue.Visit(method.Arguments[1])} ");
-                resolve.Visit(method.Arguments[2]);
+                resolve.Visit(methodCall.Arguments[0]);
+                sqlBuilder.Append($" {resolve.GetValue.Visit(methodCall.Arguments[1])} ");
+                resolve.Visit(methodCall.Arguments[2]);
             });
 
-            oracleFunc.Add("Equals", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Equals", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" = ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            oracleFunc.Add("Nvl", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Nvl", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("NVL ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            oracleFunc.Add("Case", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Case", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            oracleFunc.Add("CaseWhen", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("CaseWhen", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE WHEN ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            oracleFunc.Add("When", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("When", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" WHEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            oracleFunc.Add("Then", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Then", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" THEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            oracleFunc.Add("Else", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("Else", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" ELSE ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            oracleFunc.Add("End", (resolve, method, sqlBuilder) =>
+            oracleFunc.Add("End", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" END");
             });
             #endregion
@@ -1818,21 +2444,21 @@ namespace Fast.Framework.Extensions
             #region PostgreSQL 函数
 
             #region 类型转换
-            pgsqlFunc.Add("ToString", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToString", (resolve, methodCall, sqlBuilder) =>
             {
-                var isDateTime = method.Object != null && method.Object.Type.Equals(typeof(DateTime));
+                var isDateTime = methodCall.Object != null && methodCall.Object.Type.Equals(typeof(DateTime));
 
                 if (isDateTime)
                 {
                     sqlBuilder.Append("TO_CHAR( ");
 
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
 
                     sqlBuilder.Append(',');
 
-                    if (method.Arguments.Count > 0)
+                    if (methodCall.Arguments.Count > 0)
                     {
-                        resolve.Visit(method.Arguments[0]);
+                        resolve.Visit(methodCall.Arguments[0]);
                     }
                     else
                     {
@@ -1842,135 +2468,330 @@ namespace Fast.Framework.Extensions
                 }
                 else
                 {
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
 
-                    if (method.Arguments.Count > 0)
+                    if (methodCall.Arguments.Count > 0)
                     {
-                        resolve.Visit(method.Arguments[0]);
+                        resolve.Visit(methodCall.Arguments[0]);
                     }
                     sqlBuilder.Append("::VARCHAR(255)");
                 }
             });
 
-            pgsqlFunc.Add("ToDateTime", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToDateTime", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("::TIMESTAMP");
             });
 
-            pgsqlFunc.Add("ToDecimal", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToDecimal", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("::DECIMAL(10,6)");
             });
 
-            pgsqlFunc.Add("ToDouble", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToDouble", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("::NUMERIC(10,6)");
             });
 
-            pgsqlFunc.Add("ToSingle", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToSingle", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("::REAL");
             });
 
-            pgsqlFunc.Add("ToInt32", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToInt32", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("::INTEGER");
             });
 
-            pgsqlFunc.Add("ToInt64", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToInt64", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("::BIGINT");
             });
 
-            pgsqlFunc.Add("ToBoolean", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToBoolean", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("::BOOLEAN");
             });
 
-            pgsqlFunc.Add("ToChar", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToChar", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("::CHAR(2)");
             });
             #endregion
 
             #region 聚合
-            pgsqlFunc.Add("Max", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MAX");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MaxTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MAX");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            pgsqlFunc.Add("Min", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MIN");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MinTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MIN");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            pgsqlFunc.Add("Count", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("COUNT");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    if (methodCall.Arguments.Count > 0)
+                    {
+                        foreach (var item in methodCall.Arguments)
+                        {
+                            if (item is UnaryExpression)
+                            {
+                                var unaryExpression = item as UnaryExpression;
+                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                                {
+                                    Expression = unaryExpression.Operand,
+                                    ResolveSqlOptions = new ResolveSqlOptions()
+                                    {
+                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                        DbType = resolve.ResolveSqlOptions.DbType
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                var value = resolve.GetValue.Visit(item);
+                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("COUNT");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            pgsqlFunc.Add("Sum", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("SUM");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.SumTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("SUM");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            pgsqlFunc.Add("Avg", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("AVG");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.AvgTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("AVG");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
             #endregion
 
             #region 数学
-            pgsqlFunc.Add("Abs", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Abs", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ABS");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("Round", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Round", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ROUND");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
 
-                if (method.Arguments.Count > 1)
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                 }
                 sqlBuilder.Append(" )");
             });
             #endregion
 
             #region 字符串
-            pgsqlFunc.Add("StartsWith", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("StartsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -1981,13 +2802,13 @@ namespace Fast.Framework.Extensions
                     sqlBuilder.Append(" LIKE ");
                 }
                 sqlBuilder.Append("CONCAT( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(",'%' )");
             });
 
-            pgsqlFunc.Add("EndsWith", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("EndsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -1998,15 +2819,15 @@ namespace Fast.Framework.Extensions
                     sqlBuilder.Append(" LIKE ");
                 }
                 sqlBuilder.Append("CONCAT( '%',");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("Contains", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Contains", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Object != null && method.Object.Type.FullName.StartsWith("System.Collections.Generic"))
+                if (methodCall.Object != null && methodCall.Object.Type.FullName.StartsWith("System.Collections.Generic"))
                 {
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -2017,12 +2838,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     sqlBuilder.Append(" )");
                 }
-                else if (method.Method.DeclaringType.Equals(typeof(Enumerable)))
+                else if (methodCall.Method.DeclaringType.Equals(typeof(Enumerable)))
                 {
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -2033,12 +2854,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append(" )");
                 }
                 else
                 {
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT LIKE ");
@@ -2049,96 +2870,96 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" LIKE ");
                     }
                     sqlBuilder.Append("CONCAT( '%',");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append(",'%' )");
                 }
             });
 
-            pgsqlFunc.Add("Substring", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Substring", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("SUBSTRING");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
-                if (method.Arguments.Count > 1)
+                resolve.Visit(methodCall.Arguments[0]);
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                 }
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("Replace", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Replace", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("REPLACE");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("Length", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Length", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LENGTH");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("Trim", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Trim", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("TRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("TrimStart", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("TrimStart", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LTRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("TrimEnd", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("TrimEnd", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("RTRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("ToUpper", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToUpper", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("UPPER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("ToLower", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("ToLower", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LOWER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("Concat", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Concat", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CONCAT");
                 sqlBuilder.Append("( ");
-                for (int i = 0; i < method.Arguments.Count; i++)
+                for (int i = 0; i < methodCall.Arguments.Count; i++)
                 {
-                    resolve.Visit(method.Arguments[i]);
-                    if (method.Arguments.Count > 1)
+                    resolve.Visit(methodCall.Arguments[i]);
+                    if (methodCall.Arguments.Count > 1)
                     {
-                        if (i + 1 < method.Arguments.Count)
+                        if (i + 1 < methodCall.Arguments.Count)
                         {
                             sqlBuilder.Append(',');
                         }
@@ -2147,21 +2968,21 @@ namespace Fast.Framework.Extensions
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("Format", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Format", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Type.Equals(typeof(string)))
+                if (methodCall.Type.Equals(typeof(string)))
                 {
-                    var formatStr = Convert.ToString(resolve.GetValue.Visit(method.Arguments[0]));
+                    var formatStr = Convert.ToString(resolve.GetValue.Visit(methodCall.Arguments[0]));
                     var list = new List<object>();
-                    for (int i = 1; i < method.Arguments.Count; i++)
+                    for (int i = 1; i < methodCall.Arguments.Count; i++)
                     {
-                        list.Add(resolve.GetValue.Visit(method.Arguments[i]));
+                        list.Add(resolve.GetValue.Visit(methodCall.Arguments[i]));
                     }
                     sqlBuilder.AppendFormat($"'{formatStr}'", list.ToArray());
                 }
                 else
                 {
-                    throw new NotImplementedException($"{method.Type.Name}类型Format方法暂未实现.");
+                    throw new NotImplementedException($"{methodCall.Type.Name}类型Format方法暂未实现.");
                 }
             });
 
@@ -2169,102 +2990,102 @@ namespace Fast.Framework.Extensions
 
             #region 日期
 
-            pgsqlFunc.Add("AddYears", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("AddYears", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" + INTERVAL ");
                 sqlBuilder.Append('\'');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" YEAR' )");
             });
 
-            pgsqlFunc.Add("AddMonths", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("AddMonths", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" + INTERVAL ");
                 sqlBuilder.Append('\'');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" MONTH' )");
             });
 
-            pgsqlFunc.Add("AddDays", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("AddDays", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" + INTERVAL ");
                 sqlBuilder.Append('\'');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" DAY' )");
             });
 
-            pgsqlFunc.Add("AddHours", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("AddHours", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" + INTERVAL ");
                 sqlBuilder.Append('\'');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" HOUR' )");
             });
 
-            pgsqlFunc.Add("AddMinutes", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("AddMinutes", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" + INTERVAL ");
                 sqlBuilder.Append('\'');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" MINUTE' )");
             });
 
-            pgsqlFunc.Add("AddSeconds", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("AddSeconds", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" + INTERVAL ");
                 sqlBuilder.Append('\'');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" SECOND' )");
             });
 
-            pgsqlFunc.Add("AddMilliseconds", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("AddMilliseconds", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" + INTERVAL ");
                 sqlBuilder.Append('\'');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" MILLISECOND' )");
             });
 
             #endregion
 
             #region 查询
-            pgsqlFunc.Add("In", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("In", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("NotIn", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            pgsqlFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
 
-                foreach (var item in method.Arguments)
+                foreach (var item in methodCall.Arguments)
                 {
                     query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
                     {
@@ -2294,9 +3115,9 @@ namespace Fast.Framework.Extensions
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
 
-            pgsqlFunc.Add("First", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
                 query.QueryBuilder.IsFirst = true;
                 var sql = query.QueryBuilder.ToSqlString();
                 sqlBuilder.Append($"( {sql} )");
@@ -2305,56 +3126,56 @@ namespace Fast.Framework.Extensions
             #endregion
 
             #region 其它
-            pgsqlFunc.Add("Operation", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Operation", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append($" {resolve.GetValue.Visit(method.Arguments[1])} ");
-                resolve.Visit(method.Arguments[2]);
+                resolve.Visit(methodCall.Arguments[0]);
+                sqlBuilder.Append($" {resolve.GetValue.Visit(methodCall.Arguments[1])} ");
+                resolve.Visit(methodCall.Arguments[2]);
             });
 
-            pgsqlFunc.Add("Equals", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Equals", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" = ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            pgsqlFunc.Add("Case", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Case", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            pgsqlFunc.Add("CaseWhen", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("CaseWhen", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE WHEN ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            pgsqlFunc.Add("When", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("When", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" WHEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            pgsqlFunc.Add("Then", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Then", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" THEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            pgsqlFunc.Add("Else", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("Else", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" ELSE ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            pgsqlFunc.Add("End", (resolve, method, sqlBuilder) =>
+            pgsqlFunc.Add("End", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" END");
             });
             #endregion
@@ -2364,21 +3185,21 @@ namespace Fast.Framework.Extensions
             #region Sqlite 函数
 
             #region 类型转换
-            sqliteFunc.Add("ToString", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToString", (resolve, methodCall, sqlBuilder) =>
             {
-                var isDateTime = method.Object != null && method.Object.Type.Equals(typeof(DateTime));
+                var isDateTime = methodCall.Object != null && methodCall.Object.Type.Equals(typeof(DateTime));
 
                 if (isDateTime)
                 {
                     sqlBuilder.Append("STRFTIME( ");
 
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
 
                     sqlBuilder.Append(',');
 
-                    if (method.Arguments.Count > 0)
+                    if (methodCall.Arguments.Count > 0)
                     {
-                        var value = Convert.ToString(resolve.GetValue.Visit(method.Arguments[0]));
+                        var value = Convert.ToString(resolve.GetValue.Visit(methodCall.Arguments[0]));
                         if (value == "yyyy-MM-dd")
                         {
                             value = "%Y-%m-%d";
@@ -2399,143 +3220,338 @@ namespace Fast.Framework.Extensions
                 {
                     sqlBuilder.Append("CAST( ");
 
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
 
-                    if (method.Arguments.Count > 0)
+                    if (methodCall.Arguments.Count > 0)
                     {
-                        resolve.Visit(method.Arguments[0]);
+                        resolve.Visit(methodCall.Arguments[0]);
                     }
                     sqlBuilder.Append(" AS TEXT )");
                 }
             });
 
-            sqliteFunc.Add("ToDateTime", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToDateTime", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATETIME( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("ToDecimal", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToDecimal", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS DECIMAL(10,6) )");
             });
 
-            sqliteFunc.Add("ToDouble", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToDouble", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS NUMERIC(10,6) )");
             });
 
-            sqliteFunc.Add("ToSingle", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToSingle", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS FLOAT )");
             });
 
-            sqliteFunc.Add("ToInt32", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToInt32", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS INTEGER )");
             });
 
-            sqliteFunc.Add("ToInt64", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToInt64", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS BIGINT )");
             });
 
-            sqliteFunc.Add("ToBoolean", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToBoolean", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS CHAR(1) )");
             });
 
-            sqliteFunc.Add("ToChar", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToChar", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CAST( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" AS CHAR(2) )");
             });
             #endregion
 
             #region 聚合
-            sqliteFunc.Add("Max", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MAX");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MaxTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MAX");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            sqliteFunc.Add("Min", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("MIN");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.MinTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("MIN");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            sqliteFunc.Add("Count", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("COUNT");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    if (methodCall.Arguments.Count > 0)
+                    {
+                        foreach (var item in methodCall.Arguments)
+                        {
+                            if (item is UnaryExpression)
+                            {
+                                var unaryExpression = item as UnaryExpression;
+                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                                {
+                                    Expression = unaryExpression.Operand,
+                                    ResolveSqlOptions = new ResolveSqlOptions()
+                                    {
+                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                        DbType = resolve.ResolveSqlOptions.DbType
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                var value = resolve.GetValue.Visit(item);
+                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("COUNT");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            sqliteFunc.Add("Sum", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("SUM");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.SumTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("SUM");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
 
-            sqliteFunc.Add("Avg", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                sqlBuilder.Append("AVG");
-                sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append(" )");
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                {
+                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
+
+                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+
+                    foreach (var item in methodCall.Arguments)
+                    {
+                        if (item is UnaryExpression)
+                        {
+                            var unaryExpression = item as UnaryExpression;
+                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            {
+                                Expression = unaryExpression.Operand,
+                                ResolveSqlOptions = new ResolveSqlOptions()
+                                {
+                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
+                                    DbType = resolve.ResolveSqlOptions.DbType
+                                },
+                                IsFormat = true,
+                                Template = query.QueryBuilder.AvgTemplate
+                            });
+                        }
+                        else
+                        {
+                            var value = resolve.GetValue.Visit(item);
+                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                        }
+                    }
+
+                    var sql = query.QueryBuilder.ToSqlString();
+
+                    sqlBuilder.Append($"( {sql} )");
+                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                }
+                else
+                {
+                    sqlBuilder.Append("AVG");
+                    sqlBuilder.Append("( ");
+                    resolve.Visit(methodCall.Arguments[0]);
+                    sqlBuilder.Append(" )");
+                }
             });
             #endregion
 
             #region 数学
-            sqliteFunc.Add("Abs", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Abs", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ABS");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Round", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Round", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("ROUND");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
 
-                if (method.Arguments.Count > 1)
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                 }
                 sqlBuilder.Append(" )");
             });
             #endregion
 
             #region 字符串
-            sqliteFunc.Add("StartsWith", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("StartsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -2545,13 +3561,13 @@ namespace Fast.Framework.Extensions
                 {
                     sqlBuilder.Append(" LIKE ");
                 }
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("||'%'");
             });
 
-            sqliteFunc.Add("EndsWith", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("EndsWith", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 if (resolve.IsNot)
                 {
                     sqlBuilder.Append(" NOT LIKE ");
@@ -2562,14 +3578,14 @@ namespace Fast.Framework.Extensions
                     sqlBuilder.Append(" LIKE ");
                 }
                 sqlBuilder.Append("'%'||");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            sqliteFunc.Add("Contains", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Contains", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Object != null && method.Object.Type.FullName.StartsWith("System.Collections.Generic"))
+                if (methodCall.Object != null && methodCall.Object.Type.FullName.StartsWith("System.Collections.Generic"))
                 {
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -2580,12 +3596,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     sqlBuilder.Append(" )");
                 }
-                else if (method.Method.DeclaringType.Equals(typeof(Enumerable)))
+                else if (methodCall.Method.DeclaringType.Equals(typeof(Enumerable)))
                 {
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT IN ");
@@ -2596,12 +3612,12 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" IN ");
                     }
                     sqlBuilder.Append("( ");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append(" )");
                 }
                 else
                 {
-                    resolve.Visit(method.Object);
+                    resolve.Visit(methodCall.Object);
                     if (resolve.IsNot)
                     {
                         sqlBuilder.Append(" NOT LIKE ");
@@ -2612,102 +3628,102 @@ namespace Fast.Framework.Extensions
                         sqlBuilder.Append(" LIKE ");
                     }
                     sqlBuilder.Append("'%'||");
-                    resolve.Visit(method.Arguments[0]);
+                    resolve.Visit(methodCall.Arguments[0]);
                     sqlBuilder.Append("||'%'");
                 }
             });
 
-            sqliteFunc.Add("Substring", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Substring", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("SUBSTRING");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
-                if (method.Arguments.Count > 1)
+                resolve.Visit(methodCall.Arguments[0]);
+                if (methodCall.Arguments.Count > 1)
                 {
                     sqlBuilder.Append(',');
-                    resolve.Visit(method.Arguments[1]);
+                    resolve.Visit(methodCall.Arguments[1]);
 
                 }
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Replace", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Replace", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("REPLACE");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Length", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Length", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LENGTH");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Trim", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Trim", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("TRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("TrimStart", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("TrimStart", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LTRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("TrimEnd", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("TrimEnd", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("RTRIM");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("ToUpper", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToUpper", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("UPPER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("ToLower", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("ToLower", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("LOWER");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Format", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Format", (resolve, methodCall, sqlBuilder) =>
             {
-                if (method.Type.Equals(typeof(string)))
+                if (methodCall.Type.Equals(typeof(string)))
                 {
-                    var formatStr = Convert.ToString(resolve.GetValue.Visit(method.Arguments[0]));
+                    var formatStr = Convert.ToString(resolve.GetValue.Visit(methodCall.Arguments[0]));
                     var list = new List<object>();
-                    for (int i = 1; i < method.Arguments.Count; i++)
+                    for (int i = 1; i < methodCall.Arguments.Count; i++)
                     {
-                        list.Add(resolve.GetValue.Visit(method.Arguments[i]));
+                        list.Add(resolve.GetValue.Visit(methodCall.Arguments[i]));
                     }
                     sqlBuilder.AppendFormat($"'{formatStr}'", list.ToArray());
                 }
                 else
                 {
-                    throw new NotImplementedException($"{method.Type.Name}类型Format方法暂未实现.");
+                    throw new NotImplementedException($"{methodCall.Type.Name}类型Format方法暂未实现.");
                 }
             });
 
@@ -2715,125 +3731,125 @@ namespace Fast.Framework.Extensions
 
             #region 日期
 
-            sqliteFunc.Add("AddYears", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("AddYears", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATETIME");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",'");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" YEAR'");
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("AddMonths", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("AddMonths", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATETIME");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",'");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" MONTH'");
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("AddDays", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("AddDays", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATETIME");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",'");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" DAY'");
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("AddHours", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("AddHours", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATETIME");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",'");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" HOUR'");
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("AddMinutes", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("AddMinutes", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATETIME");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",'");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" MINUTE'");
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("AddSeconds", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("AddSeconds", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("DATETIME");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
                 sqlBuilder.Append(",'");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" SECOND'");
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Year", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Year", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("STRFTIME");
                 sqlBuilder.Append("( ");
                 sqlBuilder.Append("'%Y',");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Month", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Month", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("STRFTIME");
                 sqlBuilder.Append("( ");
                 sqlBuilder.Append("'%m',");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Day", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Day", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("STRFTIME");
                 sqlBuilder.Append("( ");
                 sqlBuilder.Append("'%j',");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" )");
             });
 
             #endregion
 
             #region 查询
-            sqliteFunc.Add("In", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("In", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("NotIn", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("NotIn", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append("NOT IN ");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Any", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
 
-                foreach (var item in method.Arguments)
+                foreach (var item in methodCall.Arguments)
                 {
                     query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
                     {
@@ -2863,9 +3879,9 @@ namespace Fast.Framework.Extensions
                 resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
             });
 
-            sqliteFunc.Add("First", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(method.Object) as IQuery;
+                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
                 query.QueryBuilder.IsFirst = true;
                 var sql = query.QueryBuilder.ToSqlString();
                 sqlBuilder.Append($"( {sql} )");
@@ -2874,66 +3890,66 @@ namespace Fast.Framework.Extensions
             #endregion
 
             #region 其它
-            sqliteFunc.Add("Operation", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Operation", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
-                sqlBuilder.Append($" {resolve.GetValue.Visit(method.Arguments[1])} ");
-                resolve.Visit(method.Arguments[2]);
+                resolve.Visit(methodCall.Arguments[0]);
+                sqlBuilder.Append($" {resolve.GetValue.Visit(methodCall.Arguments[1])} ");
+                resolve.Visit(methodCall.Arguments[2]);
             });
 
-            sqliteFunc.Add("Equals", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Equals", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" = ");
-                resolve.Visit(method.Object);
+                resolve.Visit(methodCall.Object);
             });
 
-            sqliteFunc.Add("IfNull", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("IfNull", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("IFNULL");
                 sqlBuilder.Append("( ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(',');
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
                 sqlBuilder.Append(" )");
             });
 
-            sqliteFunc.Add("Case", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Case", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            sqliteFunc.Add("CaseWhen", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("CaseWhen", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE WHEN ");
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
             });
 
-            sqliteFunc.Add("When", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("When", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" WHEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            sqliteFunc.Add("Then", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Then", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" THEN ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            sqliteFunc.Add("Else", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("Else", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" ELSE ");
-                resolve.Visit(method.Arguments[1]);
+                resolve.Visit(methodCall.Arguments[1]);
             });
 
-            sqliteFunc.Add("End", (resolve, method, sqlBuilder) =>
+            sqliteFunc.Add("End", (resolve, methodCall, sqlBuilder) =>
             {
-                resolve.Visit(method.Arguments[0]);
+                resolve.Visit(methodCall.Arguments[0]);
                 sqlBuilder.Append(" END");
             });
             #endregion
@@ -2983,6 +3999,24 @@ namespace Fast.Framework.Extensions
         }
 
         /// <summary>
+        /// 检查设置成员信息
+        /// </summary>
+        /// <param name="methodInfo">方法信息</param>
+        /// <returns></returns>
+        public static bool CheckSetMemberInfos(this MethodInfo methodInfo)
+        {
+            if (!methodInfo.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+            {
+                return false;
+            }
+            if ((methodInfo.Name == nameof(IQuery<object>.First) || methodInfo.Name == nameof(IQuery<object>.FirstAsync)) && (!methodInfo.ReturnType.IsClass || methodInfo.ReturnType.Equals(typeof(string))))
+            {
+                return false;
+            }
+            return setMemberInfosMethodMapping.Contains(methodInfo.Name);
+        }
+
+        /// <summary>
         /// 解析Sql
         /// </summary>
         /// <param name="expression">表达式</param>
@@ -2994,8 +4028,9 @@ namespace Fast.Framework.Extensions
             resolveSql.Visit(expression);
 
             result.SqlString = resolveSql.SqlBuilder.ToString();
-            result.ParameterIndexs = resolveSql.ParameterIndexs;
             result.DbParameters = resolveSql.DbParameters;
+            result.SetMemberInfos = resolveSql.SetMemberInfos;
+            result.ParameterIndexs = resolveSql.ParameterIndexs;
             return result;
         }
 

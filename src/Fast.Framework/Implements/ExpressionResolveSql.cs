@@ -8,7 +8,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Fast.Framework.CustomAttribute;
 using Fast.Framework.Enum;
 using Fast.Framework.Extensions;
@@ -67,6 +66,11 @@ namespace Fast.Framework.Implements
         public List<FastParameter> DbParameters { get; }
 
         /// <summary>
+        /// 设置成员信息
+        /// </summary>
+        public List<SetMemberInfo> SetMemberInfos { get; }
+
+        /// <summary>
         /// 是否Not
         /// </summary>
         public bool IsNot { get; set; }
@@ -84,6 +88,7 @@ namespace Fast.Framework.Implements
             GetValue = new ExpressionResolveValue();
             SqlBuilder = new StringBuilder();
             DbParameters = new List<FastParameter>();
+            SetMemberInfos = new List<SetMemberInfo>();
         }
 
         /// <summary>
@@ -414,10 +419,29 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         private Expression VisitNew(NewExpression node)
         {
-            if (node.Type.Name.StartsWith("<>f__AnonymousType"))
+            var flagAttribute = typeof(ResolveSqlType).GetField(ResolveSqlOptions.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
+            for (int i = 0; i < node.Arguments.Count; i++)
             {
-                var flagAttribute = typeof(ResolveSqlType).GetField(ResolveSqlOptions.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
-                for (int i = 0; i < node.Members.Count; i++)
+                if (node.Arguments[i].NodeType == ExpressionType.Call && (node.Arguments[i] as MethodCallExpression).Method.CheckSetMemberInfos())
+                {
+                    var value = GetValue.Visit(node.Arguments[i]);
+                    if (value != null)
+                    {
+                        var type = value.GetType();
+                        if (type.FullName.StartsWith("System.Threading.Tasks") || type.FullName.StartsWith("System.Runtime.CompilerServices.AsyncTaskMethodBuilder"))
+                        {
+                            (value as dynamic).Wait();
+                        }
+                    }
+                    SetMemberInfos.Add(new SetMemberInfo()
+                    {
+                        MemberInfo = node.Members[i],
+                        Value = value,
+                        Index = i
+                    });
+                    SqlBuilder.Append($"{i} AS fast_args_index_{i}");
+                }
+                else
                 {
                     if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAs)
                     {
@@ -451,10 +475,11 @@ namespace Fast.Framework.Implements
                     {
                         Visit(node.Arguments[i]);
                     }
-                    if (i + 1 < node.Members.Count)
-                    {
-                        SqlBuilder.Append(',');
-                    }
+                }
+
+                if (i + 1 < node.Arguments.Count)
+                {
+                    SqlBuilder.Append(',');
                 }
             }
             return null;
@@ -468,46 +493,69 @@ namespace Fast.Framework.Implements
         private Expression VisitMemberInit(MemberInitExpression node)
         {
             var flagAttribute = typeof(ResolveSqlType).GetField(ResolveSqlOptions.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
+            var appendComma = 1;
             for (int i = 0; i < node.Bindings.Count; i++)
             {
                 if (node.Bindings[i].BindingType == MemberBindingType.Assignment)
                 {
                     var memberAssignment = node.Bindings[i] as MemberAssignment;
-                    if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAs)
+                    if (memberAssignment.Expression.NodeType == ExpressionType.Call && (memberAssignment.Expression as MethodCallExpression).Method.CheckSetMemberInfos())
                     {
-                        Visit(memberAssignment.Expression);
-                        var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
-                        SqlBuilder.Append($" {flagAttribute?.Value} ");
-                        if (ResolveSqlOptions.IgnoreIdentifier)
+                        var value = GetValue.Visit(memberAssignment.Expression);
+                        if (value != null)
                         {
-                            SqlBuilder.Append(name == null ? memberAssignment.Member.Name : name);
+                            var type = value.GetType();
+                            if (type.FullName.StartsWith("System.Threading.Tasks") || type.FullName.StartsWith("System.Runtime.CompilerServices.AsyncTaskMethodBuilder"))
+                            {
+                                (value as dynamic).Wait();
+                            }
                         }
-                        else
+                        SetMemberInfos.Add(new SetMemberInfo()
                         {
-                            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? memberAssignment.Member.Name)}");
-                        }
-                    }
-                    else if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAssignment)
-                    {
-                        var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
-                        if (ResolveSqlOptions.IgnoreIdentifier)
-                        {
-                            SqlBuilder.Append(name == null ? memberAssignment.Member.Name : name);
-                        }
-                        else
-                        {
-                            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? memberAssignment.Member.Name)}");
-                        }
-                        SqlBuilder.Append($" {flagAttribute?.Value} ");
-                        Visit(memberAssignment.Expression);
+                            MemberInfo = memberAssignment.Member,
+                            Value = value,
+                            Index = i
+                        });
                     }
                     else
                     {
-                        SqlBuilder.Append(memberAssignment.Member.Name);
-                    }
-                    if (i + 1 < node.Bindings.Count)
-                    {
-                        SqlBuilder.Append(',');
+                        if (appendComma % 2 == 0)
+                        {
+                            SqlBuilder.Append(',');
+                        }
+                        appendComma++;
+                        if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAs)
+                        {
+                            Visit(memberAssignment.Expression);
+                            var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
+                            SqlBuilder.Append($" {flagAttribute?.Value} ");
+                            if (ResolveSqlOptions.IgnoreIdentifier)
+                            {
+                                SqlBuilder.Append(name == null ? memberAssignment.Member.Name : name);
+                            }
+                            else
+                            {
+                                SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? memberAssignment.Member.Name)}");
+                            }
+                        }
+                        else if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAssignment)
+                        {
+                            var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
+                            if (ResolveSqlOptions.IgnoreIdentifier)
+                            {
+                                SqlBuilder.Append(name == null ? memberAssignment.Member.Name : name);
+                            }
+                            else
+                            {
+                                SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? memberAssignment.Member.Name)}");
+                            }
+                            SqlBuilder.Append($" {flagAttribute?.Value} ");
+                            Visit(memberAssignment.Expression);
+                        }
+                        else
+                        {
+                            SqlBuilder.Append(memberAssignment.Member.Name);
+                        }
                     }
                 }
             }

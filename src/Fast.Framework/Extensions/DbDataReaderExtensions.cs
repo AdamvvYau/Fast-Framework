@@ -119,16 +119,20 @@ namespace Fast.Framework.Extensions
                 var parameterExpression = Expression.Parameter(typeof(DbDataReader), "r");
                 if (type.IsClass && type != typeof(string))
                 {
-                    var arguments = new List<Expression>();
-                    var memberBindings = new List<MemberBinding>();
-
                     var entityInfo = type.GetEntityInfo();
+
+                    var arguments = new Expression[entityInfo.ColumnsInfos.Count];
+                    var memberBindings = new List<MemberBinding>();
 
                     for (int i = 0; i < dbColumns.Count; i++)
                     {
                         var columnInfo = entityInfo.ColumnsInfos.FirstOrDefault(f => f.ColumnName == dbColumns[i].ColumnName);
 
-                        if (columnInfo != null)
+                        if (columnInfo == null && entityInfo.IsAnonymousType && dbColumns[i].ColumnName == $"fast_args_index_{i}")
+                        {
+                            arguments[i] = Expression.Default(entityInfo.ColumnsInfos[i].PropertyInfo.PropertyType);
+                        }
+                        else
                         {
                             var constantExpression = Expression.Constant(i);
                             var isDBNullMethodCall = Expression.Call(parameterExpression, isDBNullMethod, constantExpression);
@@ -212,7 +216,7 @@ namespace Fast.Framework.Extensions
 
                             if (entityInfo.IsAnonymousType)
                             {
-                                arguments.Add(getValueExpression);
+                                arguments[i] = getValueExpression;
                             }
                             else
                             {

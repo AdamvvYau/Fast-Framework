@@ -886,6 +886,7 @@ namespace Fast.Framework
             var sql = QueryBuilder.ToSqlString();
             var data = ado.ExecuteReader(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).FirstBuild<T>();
             QueryBuilder.IncludeDataBind(ado, data);
+            QueryBuilder.SetMemberData(data);
             return data;
         }
 
@@ -899,6 +900,7 @@ namespace Fast.Framework
             var sql = QueryBuilder.ToSqlString();
             var data = await ado.ExecuteReaderAsync(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).FirstBuildAsync<T>();
             QueryBuilder.IncludeDataBind(ado, data);
+            QueryBuilder.SetMemberData(data);
             return data;
         }
 
@@ -931,6 +933,7 @@ namespace Fast.Framework
             var sql = QueryBuilder.ToSqlString();
             var data = ado.ExecuteReader(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).ListBuild<T>();
             QueryBuilder.IncludeDataBind(ado, data);
+            QueryBuilder.SetMemberData(data);
             return data;
         }
 
@@ -943,6 +946,7 @@ namespace Fast.Framework
             var sql = QueryBuilder.ToSqlString();
             var data = await ado.ExecuteReaderAsync(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).ListBuildAsync<T>();
             QueryBuilder.IncludeDataBind(ado, data);
+            QueryBuilder.SetMemberData(data);
             return data;
         }
 
@@ -961,6 +965,7 @@ namespace Fast.Framework
             var sql = QueryBuilder.ToSqlString();
             var data = ado.ExecuteReader(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).ListBuild<T>();
             QueryBuilder.IncludeDataBind(ado, data);
+            QueryBuilder.SetMemberData(data);
             return data;
         }
 
@@ -979,6 +984,7 @@ namespace Fast.Framework
             var sql = QueryBuilder.ToSqlString();
             var data = await ado.ExecuteReaderAsync(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).ListBuildAsync<T>();
             QueryBuilder.IncludeDataBind(ado, data);
+            QueryBuilder.SetMemberData(data);
             return data;
         }
 
@@ -999,6 +1005,7 @@ namespace Fast.Framework
             var data = ado.ExecuteReader(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).ListBuild<T>();
 
             QueryBuilder.IncludeDataBind(ado, data);
+            QueryBuilder.SetMemberData(data);
 
             QueryBuilder.IsPage = false;
             total = this.Count();
@@ -1022,6 +1029,7 @@ namespace Fast.Framework
             var data = await ado.ExecuteReaderAsync(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).ListBuildAsync<T>();
 
             QueryBuilder.IncludeDataBind(ado, data);
+            QueryBuilder.SetMemberData(data);
 
             QueryBuilder.IsPage = false;
             total.Value = await this.CountAsync();
@@ -1386,7 +1394,7 @@ namespace Fast.Framework
 
             var entityInfo = typeof(InsertTable).GetEntityInfo();
 
-            return Insert(ado.DbOptions.DbType.GetIdentifier().Insert(1, entityInfo.TableName), result.SqlString);
+            return Insert(entityInfo.TableName, result.SqlString);
         }
 
         /// <summary>
@@ -1408,7 +1416,7 @@ namespace Fast.Framework
 
             var entityInfo = typeof(InsertTable).GetEntityInfo();
 
-            return InsertAsync(ado.DbOptions.DbType.GetIdentifier().Insert(1, entityInfo.TableName), result.SqlString);
+            return InsertAsync(entityInfo.TableName, result.SqlString);
         }
 
         /// <summary>

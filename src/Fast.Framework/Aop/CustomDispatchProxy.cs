@@ -37,7 +37,7 @@ namespace Fast.Framework.Aop
             if (Intercept.Where(Target, methodInfo, args))
             {
                 Intercept.Before(Target, methodInfo, args);
-                if (methodInfo.ReturnType.FullName.StartsWith("System.Threading.Tasks.Task"))
+                if (methodInfo.ReturnType.FullName.StartsWith("System.Threading.Tasks.Task") || methodInfo.ReturnType.FullName.StartsWith("System.Runtime.CompilerServices.AsyncTaskMethodBuilder"))
                 {
                     result = methodInfo.Invoke(Target, args);
                     (result as dynamic).Wait();
