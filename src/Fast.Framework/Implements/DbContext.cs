@@ -868,7 +868,7 @@ namespace Fast.Framework.Implements
         /// </summary>
         /// <param name="subQuery">子查询</param>
         /// <returns></returns>
-        public IQuery<T> Query<T>(IQuery subQuery) where T : class
+        public IQuery<T> Query<T>(IQuery<T> subQuery) where T : class
         {
             return Query<T>(Ado, subQuery);
         }
