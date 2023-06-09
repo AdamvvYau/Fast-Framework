@@ -145,11 +145,11 @@ namespace Fast.Framework.Extensions
                                     throw new Exception($"数据库列{dbColumns[i].ColumnName}不是字符串类型不支持Json序列化.");
                                 }
                                 var genericMethod = typeof(Json).GetMethod("Deserialize", new Type[] { typeof(string), typeof(JsonSerializerOptions) });
-                                var deserializeMethod = genericMethod.MakeGenericMethod(columnInfo.PropertyInfo.PropertyType);
+                                var deserializeMethod = genericMethod.MakeGenericMethod(columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType);
 
                                 var getMethod = getMethodCache[dbColumns[i].DataType];
                                 getValueExpression = Expression.Call(null, deserializeMethod, new List<Expression>() { Expression.Call(parameterExpression, getMethod, constantExpression), Expression.Default(typeof(JsonSerializerOptions)) });
-                                memberBindings.Add(Expression.Bind(columnInfo.PropertyInfo, getValueExpression));
+                                memberBindings.Add(Expression.Bind(columnInfo.IsField ? columnInfo.FieldInfo : columnInfo.PropertyInfo, getValueExpression));
                             }
                             else
                             {
@@ -157,13 +157,13 @@ namespace Fast.Framework.Extensions
                                 {
                                     throw new Exception($"该类型不支持绑定{dbColumns[i].DataType.FullName}.");
                                 }
-                                var mapperType = columnInfo.PropertyInfo.PropertyType;
+                                var mapperType = columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType;
                                 var isConvert = false;
 
                                 //获取可空类型具体类型
                                 if (columnInfo.IsNullable)
                                 {
-                                    mapperType = columnInfo.PropertyInfo.PropertyType.GenericTypeArguments[0];
+                                    mapperType = columnInfo.IsField ? columnInfo.FieldInfo.FieldType.GenericTypeArguments[0] : columnInfo.PropertyInfo.PropertyType.GenericTypeArguments[0];
                                     isConvert = true;
                                 }
 
@@ -204,14 +204,14 @@ namespace Fast.Framework.Extensions
 
                                 if (isConvert)
                                 {
-                                    getValueExpression = Expression.Convert(getValueExpression, columnInfo.PropertyInfo.PropertyType);
+                                    getValueExpression = Expression.Convert(getValueExpression, columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType);
                                 }
                             }
 
                             //数据列允许DBNull增加IsDbNull判断
                             if (dbColumns[i].AllowDBNull == null || dbColumns[i].AllowDBNull.Value)
                             {
-                                getValueExpression = Expression.Condition(isDBNullMethodCall, Expression.Default(columnInfo.PropertyInfo.PropertyType), getValueExpression);
+                                getValueExpression = Expression.Condition(isDBNullMethodCall, Expression.Default(columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType), getValueExpression);
                             }
 
                             if (entityInfo.IsAnonymousType)
@@ -220,7 +220,7 @@ namespace Fast.Framework.Extensions
                             }
                             else
                             {
-                                memberBindings.Add(Expression.Bind(columnInfo.PropertyInfo, getValueExpression));
+                                memberBindings.Add(Expression.Bind(columnInfo.IsField ? columnInfo.FieldInfo : columnInfo.PropertyInfo, getValueExpression));
                             }
                         }
                     }

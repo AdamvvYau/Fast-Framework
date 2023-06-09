@@ -70,6 +70,47 @@ namespace Fast.Framework.Extensions
         }
 
         /// <summary>
+        /// 初始化列信息
+        /// </summary>
+        /// <param name="columnInfo"></param>
+        /// <param name="memberInfo"></param>
+        private static void InitColumnInfo(ColumnInfo columnInfo, MemberInfo memberInfo)
+        {
+            var databaseGeneratedAttribute = memberInfo.GetCustomAttribute<DatabaseGeneratedAttribute>(false);
+            if (databaseGeneratedAttribute != null)
+            {
+                columnInfo.DatabaseGeneratedOption = databaseGeneratedAttribute.DatabaseGeneratedOption;
+            }
+            var descriptionAttribute = memberInfo.GetCustomAttribute<DescriptionAttribute>(false);
+            if (descriptionAttribute != null)
+            {
+                columnInfo.Description = descriptionAttribute.Description;
+            }
+            columnInfo.IsNotMapped = memberInfo.IsDefined(typeof(NotMappedAttribute), false);
+            columnInfo.IsPrimaryKey = memberInfo.IsDefined(typeof(KeyAttribute), false);
+            columnInfo.IsVersion = memberInfo.IsDefined(typeof(OptLockAttribute), false);
+
+            var columnAttribute = memberInfo.GetCustomAttribute<ColumnAttribute>(false);
+            if (columnAttribute == null)
+            {
+                columnInfo.ColumnName = memberInfo.Name;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(columnAttribute.Name))
+                {
+                    columnInfo.ColumnName = memberInfo.Name;
+                }
+                else
+                {
+                    columnInfo.ColumnName = columnAttribute.Name;
+                }
+                columnInfo.TypeName = columnAttribute.TypeName;
+                columnInfo.IsJson = columnInfo.TypeName != null && columnInfo.TypeName.ToLower().Equals("json");
+            }
+        }
+
+        /// <summary>
         /// 获取实体信息
         /// </summary>
         /// <param name="type">类型</param>
@@ -104,7 +145,9 @@ namespace Fast.Framework.Extensions
 
                 var propertyInfos = type.GetProperties();
 
-                var columnInfos = propertyInfos.Select(s =>
+                var fieldInfos = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+
+                var propertyColumnInfos = propertyInfos.Select(s =>
                 {
                     var obj = new ColumnInfo
                     {
@@ -119,43 +162,26 @@ namespace Fast.Framework.Extensions
                     }
                     else
                     {
-                        var databaseGeneratedAttribute = s.GetCustomAttribute<DatabaseGeneratedAttribute>(false);
-                        if (databaseGeneratedAttribute != null)
-                        {
-                            obj.DatabaseGeneratedOption = databaseGeneratedAttribute.DatabaseGeneratedOption;
-                        }
-                        var descriptionAttribute = s.GetCustomAttribute<DescriptionAttribute>(false);
-                        if (descriptionAttribute != null)
-                        {
-                            obj.Description = descriptionAttribute.Description;
-                        }
-                        obj.IsNotMapped = s.IsDefined(typeof(NotMappedAttribute), false);
-                        obj.IsPrimaryKey = s.IsDefined(typeof(KeyAttribute), false);
-                        obj.IsVersion = s.IsDefined(typeof(OptLockAttribute), false);
-
-                        var columnAttribute = s.GetCustomAttribute<ColumnAttribute>(false);
-                        if (columnAttribute == null)
-                        {
-                            obj.ColumnName = s.Name;
-                        }
-                        else
-                        {
-                            if (string.IsNullOrWhiteSpace(columnAttribute.Name))
-                            {
-                                obj.ColumnName = s.Name;
-                            }
-                            else
-                            {
-                                obj.ColumnName = columnAttribute.Name;
-                            }
-                            obj.TypeName = columnAttribute.TypeName;
-                            obj.IsJson = obj.TypeName != null && obj.TypeName.ToLower().Equals("json");
-                        }
+                        InitColumnInfo(obj, s);
                     }
                     return obj;
                 });
 
-                entityInfo.ColumnsInfos = columnInfos.ToList();
+                var fieldColumnInfos = fieldInfos.Select(s =>
+                {
+                    var obj = new ColumnInfo
+                    {
+                        IsField = true,
+                        FieldInfo = s,
+                        IsNullable = s.FieldType.IsGenericType && s.FieldType.GetGenericTypeDefinition().Equals(typeof(Nullable<>))
+                    };
+
+                    InitColumnInfo(obj, s);
+                    return obj;
+                });
+
+                entityInfo.ColumnsInfos.AddRange(propertyColumnInfos);
+                entityInfo.ColumnsInfos.AddRange(fieldColumnInfos);
                 return entityInfo;
             });
             return entityInfoCache.Clone();

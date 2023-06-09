@@ -20,9 +20,19 @@ namespace Fast.Framework.Models
         public int GroupId { get; set; }
 
         /// <summary>
+        /// 是否字段
+        /// </summary>
+        public bool IsField { get; set; }
+
+        /// <summary>
         /// 属性信息
         /// </summary>
         public PropertyInfo PropertyInfo { get; set; }
+
+        /// <summary>
+        /// 字段信息
+        /// </summary>
+        public FieldInfo FieldInfo { get; set; }
 
         /// <summary>
         /// 列名称
@@ -93,7 +103,9 @@ namespace Fast.Framework.Models
             return new ColumnInfo()
             {
                 GroupId = this.GroupId,
+                IsField = this.IsField,
                 PropertyInfo = this.PropertyInfo,
+                FieldInfo = this.FieldInfo,
                 ColumnName = this.ColumnName,
                 TypeName = this.TypeName,
                 IsJson = this.IsJson,
