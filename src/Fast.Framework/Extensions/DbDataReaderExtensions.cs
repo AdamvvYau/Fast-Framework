@@ -121,16 +121,21 @@ namespace Fast.Framework.Extensions
                 {
                     var entityInfo = type.GetEntityInfo();
 
-                    var arguments = new Expression[entityInfo.ColumnsInfos.Count];
+                    var arguments = new List<Expression>();
                     var memberBindings = new List<MemberBinding>();
 
                     for (int i = 0; i < dbColumns.Count; i++)
                     {
                         var columnInfo = entityInfo.ColumnsInfos.FirstOrDefault(f => f.ColumnName == dbColumns[i].ColumnName);
 
-                        if (columnInfo == null && entityInfo.IsAnonymousType && dbColumns[i].ColumnName == $"fast_args_index_{i}")
+                        if (columnInfo == null && entityInfo.IsAnonymousType && dbColumns[i].ColumnName.StartsWith("fast_args_index_"))
                         {
-                            arguments[i] = Expression.Default(entityInfo.ColumnsInfos[i].PropertyInfo.PropertyType);
+                            while (arguments.Count < i)
+                            {
+                                arguments.Add(default);
+                            }
+                            var index = Convert.ToInt32(dbColumns[i].ColumnName.Split("_")[3]);
+                            arguments[index] = Expression.Default(entityInfo.ColumnsInfos[index].PropertyInfo.PropertyType);
                         }
                         else if (columnInfo != null)
                         {
@@ -216,7 +221,7 @@ namespace Fast.Framework.Extensions
 
                             if (entityInfo.IsAnonymousType)
                             {
-                                arguments[i] = getValueExpression;
+                                arguments.Add(getValueExpression);
                             }
                             else
                             {
