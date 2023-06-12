@@ -131,11 +131,7 @@ namespace Fast.Framework.Extensions
                         if (columnInfo == null && entityInfo.IsAnonymousType && dbColumns[i].ColumnName.StartsWith("fast_args_index_"))
                         {
                             var index = Convert.ToInt32(dbColumns[i].ColumnName.Split("_")[3]);
-                            while (arguments.Count - 1 < index)
-                            {
-                                arguments.Add(default);
-                            }
-                            arguments[index] = Expression.Default(entityInfo.ColumnsInfos[index].PropertyInfo.PropertyType);
+                            arguments.Insert(index, Expression.Default(entityInfo.ColumnsInfos[index].PropertyInfo.PropertyType));
                         }
                         else if (columnInfo != null)
                         {
