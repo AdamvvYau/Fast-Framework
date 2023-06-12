@@ -130,7 +130,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -374,33 +374,6 @@ namespace Fast.Framework
         /// <summary>
         /// 条件
         /// </summary>
-        /// <param name="obj">对象</param>
-        /// <returns></returns>
-        public IQuery<T> Where(object obj)
-        {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-            var type = obj.GetType();
-            var entityInfo = type.GetEntityInfo();
-
-            if (entityInfo.ColumnsInfos.Count == 0)
-            {
-                throw new Exception("未获取到属性.");
-            }
-
-            var dbParameters = entityInfo.ColumnsInfos.GenerateDbParameters(obj);
-            var whereList = entityInfo.ColumnsInfos.Select(s => $"{ado.DbOptions.DbType.GetIdentifier().Insert(1, s.ColumnName)} = {ado.DbOptions.DbType.GetSymbol()}{s.ParameterName}");
-
-            QueryBuilder.Where.Add(string.Join(" AND ", whereList));
-            QueryBuilder.DbParameters.AddRange(dbParameters);
-            return this;
-        }
-
-        /// <summary>
-        /// 条件
-        /// </summary>
         /// <param name="expression">表达式</param>
         /// <returns></returns>
         public IQuery<T> Where(Expression<Func<T, bool>> expression)
@@ -630,7 +603,12 @@ namespace Fast.Framework
         public TResult Min<TResult>(string column)
         {
             QueryBuilder.ResolveExpressions();
-            return this.Select<TResult>(string.Format(QueryBuilder.MinTemplate, column)).ToList().FirstOrDefault();
+            var query = this.Select<TResult>(string.Format(QueryBuilder.MinTemplate, column));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return query.ToList().FirstOrDefault();
         }
 
         /// <summary>
@@ -642,7 +620,12 @@ namespace Fast.Framework
         public async Task<TResult> MinAsync<TResult>(string column)
         {
             QueryBuilder.ResolveExpressions();
-            return (await this.Select<TResult>(string.Format(QueryBuilder.MinTemplate, column)).ToListAsync()).FirstOrDefault();
+            var query = this.Select<TResult>(string.Format(QueryBuilder.MinTemplate, column));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return (await query.ToListAsync()).FirstOrDefault();
         }
 
         /// <summary>
@@ -653,6 +636,10 @@ namespace Fast.Framework
         public TResult Min<TResult>(Expression<Func<T, TResult>> expression)
         {
             Func_(expression, QueryBuilder.MinTemplate);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return this.Select<TResult>().ToList().FirstOrDefault();
         }
 
@@ -664,6 +651,10 @@ namespace Fast.Framework
         public async Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> expression)
         {
             Func_(expression, QueryBuilder.MinTemplate);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return (await this.Select<TResult>().ToListAsync()).FirstOrDefault();
         }
 
@@ -676,7 +667,12 @@ namespace Fast.Framework
         public TResult Max<TResult>(string column)
         {
             QueryBuilder.ResolveExpressions();
-            return this.Select<TResult>(string.Format(QueryBuilder.MaxTemplate, column)).ToList().FirstOrDefault();
+            var query = this.Select<TResult>(string.Format(QueryBuilder.MaxTemplate, column));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return query.ToList().FirstOrDefault();
         }
 
         /// <summary>
@@ -688,7 +684,12 @@ namespace Fast.Framework
         public async Task<TResult> MaxAsync<TResult>(string column)
         {
             QueryBuilder.ResolveExpressions();
-            return (await this.Select<TResult>(string.Format(QueryBuilder.MaxTemplate, column)).ToListAsync()).FirstOrDefault();
+            var query = this.Select<TResult>(string.Format(QueryBuilder.MaxTemplate, column));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return (await query.ToListAsync()).FirstOrDefault();
         }
 
         /// <summary>
@@ -699,6 +700,10 @@ namespace Fast.Framework
         public TResult Max<TResult>(Expression<Func<T, TResult>> expression)
         {
             Func_(expression, QueryBuilder.MaxTemplate);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return this.Select<TResult>().ToList().FirstOrDefault();
         }
 
@@ -710,6 +715,10 @@ namespace Fast.Framework
         public async Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> expression)
         {
             Func_(expression, QueryBuilder.MaxTemplate);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return (await this.Select<TResult>().ToListAsync()).FirstOrDefault();
         }
 
@@ -722,7 +731,12 @@ namespace Fast.Framework
         public TResult Sum<TResult>(string column)
         {
             QueryBuilder.ResolveExpressions();
-            return this.Select<TResult>(string.Format(QueryBuilder.SumTemplate, column)).ToList().FirstOrDefault();
+            var query = this.Select<TResult>(string.Format(QueryBuilder.SumTemplate, column));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return query.ToList().FirstOrDefault();
         }
 
         /// <summary>
@@ -734,7 +748,12 @@ namespace Fast.Framework
         public async Task<TResult> SumAsync<TResult>(string column)
         {
             QueryBuilder.ResolveExpressions();
-            return (await this.Select<TResult>(string.Format(QueryBuilder.SumTemplate, column)).ToListAsync()).FirstOrDefault();
+            var query = this.Select<TResult>(string.Format(QueryBuilder.SumTemplate, column));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return (await query.ToListAsync()).FirstOrDefault();
         }
 
         /// <summary>
@@ -745,6 +764,10 @@ namespace Fast.Framework
         public TResult Sum<TResult>(Expression<Func<T, TResult>> expression)
         {
             Func_(expression, QueryBuilder.SumTemplate);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return this.Select<TResult>().ToList().FirstOrDefault();
         }
 
@@ -756,6 +779,10 @@ namespace Fast.Framework
         public async Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> expression)
         {
             Func_(expression, QueryBuilder.SumTemplate);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return (await this.Select<TResult>().ToListAsync()).FirstOrDefault();
         }
 
@@ -768,7 +795,12 @@ namespace Fast.Framework
         public TResult Avg<TResult>(string column)
         {
             QueryBuilder.ResolveExpressions();
-            return this.Select<TResult>(string.Format(QueryBuilder.AvgTemplate, column)).ToList().FirstOrDefault();
+            var query = this.Select<TResult>(string.Format(QueryBuilder.AvgTemplate, column));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return query.ToList().FirstOrDefault();
         }
 
         /// <summary>
@@ -780,7 +812,12 @@ namespace Fast.Framework
         public async Task<TResult> AvgAsync<TResult>(string column)
         {
             QueryBuilder.ResolveExpressions();
-            return (await this.Select<TResult>(string.Format(QueryBuilder.AvgTemplate, column)).ToListAsync()).FirstOrDefault();
+            var query = this.Select<TResult>(string.Format(QueryBuilder.AvgTemplate, column));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return (await query.ToListAsync()).FirstOrDefault();
         }
 
         /// <summary>
@@ -791,6 +828,10 @@ namespace Fast.Framework
         public TResult Avg<TResult>(Expression<Func<T, TResult>> expression)
         {
             Func_(expression, QueryBuilder.AvgTemplate);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return this.Select<TResult>().ToList().FirstOrDefault();
         }
 
@@ -802,6 +843,10 @@ namespace Fast.Framework
         public async Task<TResult> AvgAsync<TResult>(Expression<Func<T, TResult>> expression)
         {
             Func_(expression, QueryBuilder.AvgTemplate);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return (await this.Select<TResult>().ToListAsync()).FirstOrDefault();
         }
 
@@ -812,7 +857,12 @@ namespace Fast.Framework
         public int Count()
         {
             QueryBuilder.ResolveExpressions();
-            return this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1)).ToList().FirstOrDefault();
+            var query = this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return query.ToList().FirstOrDefault();
         }
 
         /// <summary>
@@ -822,7 +872,12 @@ namespace Fast.Framework
         public async Task<int> CountAsync()
         {
             QueryBuilder.ResolveExpressions();
-            return (await this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1)).ToListAsync()).FirstOrDefault();
+            var query = this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return (await query.ToListAsync()).FirstOrDefault();
         }
 
 
@@ -851,7 +906,12 @@ namespace Fast.Framework
         public int Count(Expression<Func<T, bool>> expression)
         {
             Count_(expression);
-            return this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1)).ToList().FirstOrDefault();
+            var query = this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return query.ToList().FirstOrDefault();
         }
 
         /// <summary>
@@ -862,7 +922,12 @@ namespace Fast.Framework
         public async Task<int> CountAsync(Expression<Func<T, bool>> expression)
         {
             Count_(expression);
-            return (await this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1)).ToListAsync()).FirstOrDefault();
+            var query = this.Select<int>(string.Format(QueryBuilder.CountTemplate, 1));
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return (await query.ToListAsync()).FirstOrDefault();
         }
     }
     #endregion
@@ -883,6 +948,10 @@ namespace Fast.Framework
         public T First()
         {
             QueryBuilder.IsFirst = true;
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             var sql = QueryBuilder.ToSqlString();
             var data = ado.ExecuteReader(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).FirstBuild<T>();
             QueryBuilder.IncludeDataBind(ado, data);
@@ -897,6 +966,10 @@ namespace Fast.Framework
         public virtual async Task<T> FirstAsync()
         {
             QueryBuilder.IsFirst = true;
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             var sql = QueryBuilder.ToSqlString();
             var data = await ado.ExecuteReaderAsync(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters)).FirstBuildAsync<T>();
             QueryBuilder.IncludeDataBind(ado, data);
@@ -1332,6 +1405,10 @@ namespace Fast.Framework
         /// <returns></returns>
         public bool Any()
         {
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return this.Count() > 0;
         }
 
@@ -1341,6 +1418,10 @@ namespace Fast.Framework
         /// <returns></returns>
         public async Task<bool> AnyAsync()
         {
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
             return await this.CountAsync() > 0;
         }
 
@@ -1351,7 +1432,12 @@ namespace Fast.Framework
         /// <returns></returns>
         public bool Any(Expression<Func<T, bool>> expression)
         {
-            return this.Where(expression).Count() > 0;
+            this.Where(expression);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return this.Count() > 0;
         }
 
         /// <summary>
@@ -1361,7 +1447,12 @@ namespace Fast.Framework
         /// <returns></returns>
         public async Task<bool> AnyAsync(Expression<Func<T, bool>> expression)
         {
-            return await this.Where(expression).CountAsync() > 0;
+            this.Where(expression);
+            if (QueryBuilder.IsSubQuery)
+            {
+                return default;
+            }
+            return await this.CountAsync() > 0;
         }
     }
     #endregion
@@ -1534,7 +1625,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -1828,7 +1919,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -2124,7 +2215,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -2420,7 +2511,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -2717,7 +2808,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -3015,7 +3106,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -3314,7 +3405,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -3614,7 +3705,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -3915,7 +4006,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)
@@ -4216,7 +4307,7 @@ namespace Fast.Framework
             {
                 ExpressionId = expressionInfo.Id,
                 JoinType = joinType,
-                EntityDbMapping = type.GetEntityInfo()
+                EntityInfo = type.GetEntityInfo()
             };
 
             if (subQuery != null)

@@ -68,7 +68,7 @@ namespace Fast.Framework.Abstract
         /// </summary>
         public virtual void ResolveExpressions()
         {
-            if (!this.Expressions.ResolveComplete)
+            if (!this.Expressions.ResolveComplete && Expressions.ExpressionInfos.Count > 0)
             {
                 foreach (var item in this.Expressions.ExpressionInfos)
                 {

@@ -29,8 +29,8 @@ namespace Fast.Framework.Models
         public List<SetMemberInfo> SetMemberInfos { get; set; }
 
         /// <summary>
-        /// 参数索引
+        /// Lambda参数信息
         /// </summary>
-        public Dictionary<string, int> ParameterIndexs { get; set; }
+        public List<LambdaParameterInfo> LambdaParameterInfos { get; set; }
     }
 }

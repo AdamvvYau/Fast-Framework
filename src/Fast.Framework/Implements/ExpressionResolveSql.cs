@@ -13,7 +13,7 @@ using Fast.Framework.Enum;
 using Fast.Framework.Extensions;
 using Fast.Framework.Interfaces;
 using Fast.Framework.Models;
-
+using Fast.Framework.Utils;
 
 namespace Fast.Framework.Implements
 {
@@ -46,9 +46,9 @@ namespace Fast.Framework.Implements
         public ResolveSqlOptions ResolveSqlOptions { get; }
 
         /// <summary>
-        /// 参数索引
+        /// Lambda参数信息
         /// </summary>
-        public Dictionary<string, int> ParameterIndexs { get; }
+        public List<LambdaParameterInfo> LambdaParameterInfos { get; }
 
         /// <summary>
         /// 获取值
@@ -84,11 +84,23 @@ namespace Fast.Framework.Implements
             this.memberInfos = new Stack<MemberInfoEx>();
             this.arrayIndexs = new Stack<int>();
 
-            ParameterIndexs = new Dictionary<string, int>();
+            LambdaParameterInfos = new List<LambdaParameterInfo>();
             GetValue = new ExpressionResolveValue();
             SqlBuilder = new StringBuilder();
             DbParameters = new List<FastParameter>();
             SetMemberInfos = new List<SetMemberInfo>();
+
+            if (options.ParentLambdaParameterInfos != null && options.ParentLambdaParameterInfos.Any())
+            {
+                if (options.UseCustomParameter)
+                {
+                    options.CustomParameterStartIndex += options.ParentLambdaParameterInfos.Max(m => m.ParameterIndex);
+                }
+                foreach (var item in options.ParentLambdaParameterInfos)
+                {
+                    item.IsUsing = false;//下一个查询重置引用关系
+                }
+            }
         }
 
         /// <summary>
@@ -160,7 +172,13 @@ namespace Fast.Framework.Implements
             bodyExpression = node.Body;
             foreach (var item in node.Parameters)
             {
-                ParameterIndexs.Add(item.Name, ResolveSqlOptions.CustomParameterStartIndex);
+                LambdaParameterInfos.Add(new LambdaParameterInfo()
+                {
+                    ParameterType = item.Type,
+                    ParameterIndex = ResolveSqlOptions.CustomParameterStartIndex,
+                    ParameterName = item.Name,
+                    ResolveName = ResolveSqlOptions.UseCustomParameter ? ResolveSqlOptions.CustomParameterName : item.Name
+                });
                 ResolveSqlOptions.CustomParameterStartIndex++;
             }
             return bodyExpression;
@@ -422,8 +440,23 @@ namespace Fast.Framework.Implements
             var flagAttribute = typeof(ResolveSqlType).GetField(ResolveSqlOptions.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
             for (int i = 0; i < node.Arguments.Count; i++)
             {
-                if (node.Arguments[i].NodeType == ExpressionType.Call && (node.Arguments[i] as MethodCallExpression).Method.CheckSetMemberInfos())
+                var methodCallExpression = node.Arguments[i] as MethodCallExpression;
+                if (methodCallExpression != null && methodCallExpression.Method.CheckSetMemberInfos())
                 {
+                    GetValue.MethodCallAfter = (obj, result, exp) =>
+                    {
+                        if (exp.Method.Name.StartsWith("Query"))
+                        {
+                            var query = result as IQuery;
+                            query.QueryBuilder.IncludeSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = LambdaParameterInfos;
+                            if (ResolveSqlOptions.ParentLambdaParameterInfos != null && ResolveSqlOptions.ParentLambdaParameterInfos.Any())
+                            {
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = DbParameters.Count;
+                        }
+                    };
                     var value = GetValue.Visit(node.Arguments[i]);
                     if (value != null)
                     {
@@ -498,8 +531,23 @@ namespace Fast.Framework.Implements
                 if (node.Bindings[i].BindingType == MemberBindingType.Assignment)
                 {
                     var memberAssignment = node.Bindings[i] as MemberAssignment;
-                    if (memberAssignment.Expression.NodeType == ExpressionType.Call && (memberAssignment.Expression as MethodCallExpression).Method.CheckSetMemberInfos())
+                    var methodCallExpression = memberAssignment.Expression as MethodCallExpression;
+                    if (methodCallExpression != null && methodCallExpression.Method.CheckSetMemberInfos())
                     {
+                        GetValue.MethodCallAfter = (obj, result, exp) =>
+                        {
+                            if (exp.Method.Name.StartsWith("Query"))
+                            {
+                                var query = result as IQuery;
+                                query.QueryBuilder.IncludeSubQuery = true;
+                                query.QueryBuilder.ParentLambdaParameterInfos = LambdaParameterInfos;
+                                if (ResolveSqlOptions.ParentLambdaParameterInfos != null && ResolveSqlOptions.ParentLambdaParameterInfos.Any())
+                                {
+                                    query.QueryBuilder.ParentLambdaParameterInfos.AddRange(ResolveSqlOptions.ParentLambdaParameterInfos);
+                                }
+                                query.QueryBuilder.ParentParameterCount = DbParameters.Count;
+                            }
+                        };
                         var value = GetValue.Visit(memberAssignment.Expression);
                         if (value != null)
                         {
@@ -637,17 +685,28 @@ namespace Fast.Framework.Implements
             {
                 if (node.Expression.NodeType == ExpressionType.Parameter)
                 {
-                    var parameterExpression = (ParameterExpression)node.Expression;
                     if (!ResolveSqlOptions.IgnoreParameter)
                     {
+                        var parameterExpression = node.Expression as ParameterExpression;
                         var parameterName = "";
-                        if (ParameterIndexs.ContainsKey(parameterExpression.Name))
+                        if (LambdaParameterInfos.Any(a => a.ParameterName == parameterExpression.Name))
                         {
-                            parameterName = ResolveSqlOptions.UseCustomParameter ? $"{ResolveSqlOptions.CustomParameterName}{ParameterIndexs[parameterExpression.Name]}" : parameterExpression.Name;
+                            var lambdaParameterInfo = LambdaParameterInfos.First(f => f.ParameterName == parameterExpression.Name);
+                            parameterName = ResolveSqlOptions.UseCustomParameter ? $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}" : lambdaParameterInfo.ResolveName;
                         }
-                        else if (ResolveSqlOptions.ParentParameterIndexs != null && ResolveSqlOptions.ParentParameterIndexs.ContainsKey(parameterExpression.Name))
+                        else if (ResolveSqlOptions.ParentLambdaParameterInfos.Any(a => a.ParameterName == parameterExpression.Name))
                         {
-                            parameterName = ResolveSqlOptions.UseCustomParameter ? $"{ResolveSqlOptions.CustomParameterName}{ResolveSqlOptions.ParentParameterIndexs[parameterExpression.Name]}" : parameterExpression.Name;
+                            if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where)
+                            {
+                                ResolveSqlOptions.ResolveSqlType = ResolveSqlType.Join;//更改为联表条件
+                            }
+                            var parentLambdaParameterInfo = ResolveSqlOptions.ParentLambdaParameterInfos.First(f => f.ParameterName == parameterExpression.Name);
+                            parentLambdaParameterInfo.IsUsing = true;//标记为被引用
+                            parameterName = ResolveSqlOptions.UseCustomParameter ? $"{parentLambdaParameterInfo.ResolveName}{parentLambdaParameterInfo.ParameterIndex}" : parentLambdaParameterInfo.ResolveName;
+                        }
+                        else
+                        {
+                            throw new ArgumentException($"无法解析参数名称:{parameterExpression.Name},请检查作用域是否超出范围.");
                         }
                         if (ResolveSqlOptions.IgnoreIdentifier)
                         {

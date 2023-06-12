@@ -585,13 +585,58 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
                   var data1 = db.Query<Product>().Where(w => new List<string>(){"1001", "1002"}.Contains(w.ProductCode)).ToList();
   ```
   
-- Select子查询
+- Select嵌套查询和子查询
 
   ```c#
-                  var data = db.Query<Product>().Select(s => new
+                  var data1 = db.Query<Product>().Select(s => new
                   {
-                      XX = db.Query<Product>().Select(s => 1).First() //需要注意的是，这里只能返回单一结果
+                      XX = db.Query<Product>().Select(s => 1).First()//需调用返回结果的方法 否则无法解析
                   }).First();
+  
+  				//进价用法，下面示例方法的重载均支持
+                  var query = db.Query<Product>().Select(s => new
+                  {
+                      WithAttr_First = db.QueryWithAttr<Product>().First(),
+                      WithAttr_FirstAsync = db.QueryWithAttr<Product>().FirstAsync(),
+                      WithAttr_ToList = db.QueryWithAttr<Product>().ToList(),
+                      WithAttr_ToListAsync = db.QueryWithAttr<Product>().ToListAsync(),
+                      First_1 = db.Query<Category>().Select(s => 1).First(),//解析成Sql
+                      First = db.Query<Category>().First(),
+                      FirstAsync = db.Query<Category>().FirstAsync(),
+                      ToArray = db.Query<Category>().ToArray(),
+                      ToArrayAsync = db.Query<Category>().ToArrayAsync(),
+                      ToList = db.Query<Category>().ToList(),
+                      ToListAsync = db.Query<Category>().ToListAsync(),
+                      ToPageList = db.Query<Category>().ToPageList(1, 10),
+                      ToPageListAsync = db.Query<Category>().ToPageListAsync(1, 10),
+                      ToPageList_Count = db.Query<Category>().ToPageList(1, 10, ref count),
+                      ToPageListAsync_Count = db.Query<Category>().ToPageListAsync(1, 10, refAsync),
+                      ToDictionary = db.Query<Category>().ToDictionary(),
+                      ToDictionaryAsync = db.Query<Category>().ToDictionaryAsync(),
+                      ToDictionaryList = db.Query<Category>().ToDictionaryList(),
+                      ToDictionaryListAsync = db.Query<Category>().ToDictionaryListAsync(),
+                      ToDictionaryPageList = db.Query<Category>().ToDictionaryPageList(1, 10),
+                      ToDictionaryPageListAsync = db.Query<Category>().ToDictionaryPageListAsync(1, 10),
+                      ToDictionaryPageList_Count = db.Query<Category>().ToDictionaryPageList(1, 10, ref count),
+                      ToDictionaryPageListAsync_Count = db.Query<Category>().ToDictionaryPageListAsync(1, 10, refAsync),
+                      ToDataTable = db.Query<Category>().ToDataTable(),
+                      ToDataTableAsync = db.Query<Category>().ToDataTableAsync(),
+                      ObjToJson = db.Query<Category>().ObjToJson(),
+                      ObjToJsonAsync = db.Query<Category>().ObjToJsonAsync(),
+                      ObjListToJson = db.Query<Category>().ObjListToJson(),
+                      ObjListToJsonAsync = db.Query<Category>().ObjListToJsonAsync(),
+                      Max = db.Query<Category>().Max(a => a.CategoryId),//解析成Sql
+                      MaxAsync = db.Query<Category>().MaxAsync(a => a.CategoryId),
+                      Min = db.Query<Category>().Min(a => a.CategoryId),//解析成Sql
+                      MinAsync = db.Query<Category>().MinAsync(a => a.CategoryId),
+                      Count = db.Query<Category>().Count(),//解析成Sql
+                      CountAsync = db.Query<Category>().CountAsync(),
+                      Sum = db.Query<Category>().Sum(s => s.CategoryId),//解析成Sql
+                      SumAsync = db.Query<Category>().SumAsync(s => s.CategoryId),
+                      Avg = db.Query<Category>().Avg(s => s.CategoryId),//解析成Sql
+                      AvgAsync = db.Query<Category>().AvgAsync(s => s.CategoryId)
+                  });
+  				var data2= query.First();
   ```
   
 - From子查询
@@ -636,8 +681,6 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
                       _xx = s.ProductName
                   }).First();
   ```
-
-  
 
 ##### 八、Lambda表达式
 

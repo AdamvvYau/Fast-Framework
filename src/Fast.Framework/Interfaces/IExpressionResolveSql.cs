@@ -23,9 +23,9 @@ namespace Fast.Framework.Interfaces
         ResolveSqlOptions ResolveSqlOptions { get; }
 
         /// <summary>
-        /// 参数索引
+        /// Lambda参数信息
         /// </summary>
-        Dictionary<string, int> ParameterIndexs { get; }
+        List<LambdaParameterInfo> LambdaParameterInfos { get; }
 
         /// <summary>
         /// Sql构建

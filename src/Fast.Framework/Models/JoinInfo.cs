@@ -39,9 +39,9 @@ namespace Fast.Framework.Models
         public JoinType JoinType { get; set; }
 
         /// <summary>
-        /// 实体数据库映射
+        /// 实体信息
         /// </summary>
-        public EntityInfo EntityDbMapping { get; set; }
+        public EntityInfo EntityInfo { get; set; }
 
         /// <summary>
         /// 条件

@@ -184,13 +184,6 @@ namespace Fast.Framework.Interfaces
         /// <summary>
         /// 条件
         /// </summary>
-        /// <param name="obj">对象</param>
-        /// <returns></returns>
-        IQuery<T> Where(object obj);
-
-        /// <summary>
-        /// 条件
-        /// </summary>
         /// <param name="expression">表达式</param>
         /// <returns></returns>
         IQuery<T> Where(Expression<Func<T, bool>> expression);

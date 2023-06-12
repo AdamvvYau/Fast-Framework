@@ -105,7 +105,7 @@ namespace Fast.Framework.Extensions
             var joinInfo = new JoinInfo();
             joinInfo.IsInclude = true;
             joinInfo.JoinType = JoinType.Inner;
-            joinInfo.EntityDbMapping = includeInfo.EntityDbMapping;
+            joinInfo.EntityInfo = includeInfo.EntityDbMapping;
             joinInfo.Where = $"{identifier.Insert(1, includeInfo.QueryBuilder.EntityInfo.Alias)}.{identifier.Insert(1, includeInfo.WhereColumn.ColumnName)} = {identifier.Insert(1, includeInfo.EntityDbMapping.Alias)}.{identifier.Insert(1, includeInfo.WhereColumn.ColumnName)}";
 
             includeInfo.QueryBuilder.Join.Add(joinInfo);
@@ -278,6 +278,22 @@ namespace Fast.Framework.Extensions
                             fieldInfo.SetValue(obj, item.Value);
                         }
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 设置成员数据
+        /// </summary>
+        /// <param name="queryBuilder">查询构建</param>
+        /// <param name="list">列表</param> 
+        public static void SetMemberData<T>(this QueryBuilder queryBuilder, List<T> objList)
+        {
+            if (objList != null && objList.Any())
+            {
+                foreach (var item in objList)
+                {
+                    queryBuilder.SetMemberData(item);
                 }
             }
         }

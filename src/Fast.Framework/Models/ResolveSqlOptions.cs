@@ -59,8 +59,8 @@ namespace Fast.Framework.Models
         public int DbParameterStartIndex { get; set; } = 1;
 
         /// <summary>
-        /// 父级参数索引
+        /// 父级Lambda参数信息
         /// </summary>
-        public Dictionary<string, int> ParentParameterIndexs { get; set; }
+        public List<LambdaParameterInfo> ParentLambdaParameterInfos { get; set; }
     }
 }

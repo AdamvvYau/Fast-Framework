@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Fast.Framework.Enum;
@@ -50,14 +51,14 @@ namespace Fast.Framework.Abstract
         public EntityInfo EntityInfo { get; set; }
 
         /// <summary>
-        /// 是否子查询
+        /// 是否From查询
         /// </summary>
-        public bool IsSubQuery { get; set; }
+        public bool IsFromQuery { get; set; }
 
         /// <summary>
-        /// 子查询Sql
+        /// From查询Sql
         /// </summary>
-        public string SubQuerySql { get; set; }
+        public string FromQuerySql { get; set; }
 
         /// <summary>
         /// 是否去重
@@ -125,14 +126,19 @@ namespace Fast.Framework.Abstract
         public List<FastParameter> DbParameters { get; set; }
 
         /// <summary>
-        /// 强制别名
+        /// 包含子查询
         /// </summary>
-        public bool ForceAlias { get; set; }
+        public bool IncludeSubQuery { get; set; }
 
         /// <summary>
-        /// 父级参数索引
+        /// 是否子查询
         /// </summary>
-        public Dictionary<string, int> ParentParameterIndexs { get; set; }
+        public bool IsSubQuery { get; set; }
+
+        /// <summary>
+        /// 父级Lambda参数信息
+        /// </summary>
+        public List<LambdaParameterInfo> ParentLambdaParameterInfos { get; set; }
 
         /// <summary>
         /// 父级参数计数
@@ -249,6 +255,7 @@ namespace Fast.Framework.Abstract
             SetMemberInfos = new List<SetMemberInfo>();
             EntityInfo = new EntityInfo();
             DbParameters = new List<FastParameter>();
+            ParentLambdaParameterInfos = new List<LambdaParameterInfo>();
             Join = new List<JoinInfo>();
             Where = new List<string>();
             GroupBy = new List<string>();
@@ -261,28 +268,15 @@ namespace Fast.Framework.Abstract
         /// </summary>
         public virtual void ResolveExpressions()
         {
-            if (!Expressions.ResolveComplete)
+            if (!Expressions.ResolveComplete && Expressions.ExpressionInfos.Count > 0)
             {
-                if (!ForceAlias)
-                {
-                    ForceAlias = Expressions.ExpressionInfos.Exists(e =>
-                    {
-                        var str = e.Expression.ToString();
-                        return str.Contains(".Any(");
-                    });
-                }
                 foreach (var item in Expressions.ExpressionInfos)
                 {
-                    item.ResolveSqlOptions.IgnoreParameter = Join.Count == 0 && !ForceAlias;
+                    item.ResolveSqlOptions.IgnoreParameter = Join.Count == 0 && !IsSubQuery && !IncludeSubQuery;
 
-                    item.ResolveSqlOptions.DbParameterStartIndex = ParentParameterCount + DbParameters.Count + 1;
+                    item.ResolveSqlOptions.DbParameterStartIndex = ParentParameterCount + DbParameters.Count + 1;//数据库参数起始索引
 
-                    item.ResolveSqlOptions.ParentParameterIndexs = ParentParameterIndexs;
-
-                    if (ParentParameterIndexs != null)
-                    {
-                        item.ResolveSqlOptions.CustomParameterStartIndex += ParentParameterIndexs.Count;
-                    }
+                    item.ResolveSqlOptions.ParentLambdaParameterInfos = ParentLambdaParameterInfos;//父级参数索引
 
                     var result = item.Expression.ResolveSql(item.ResolveSqlOptions);
 
@@ -291,10 +285,46 @@ namespace Fast.Framework.Abstract
                         result.SqlString = string.Format(item.Template, result.SqlString);
                     }
 
-                    if (ForceAlias)
+                    var usingLambdaParameterInfos = item.ResolveSqlOptions.ParentLambdaParameterInfos.Where(w => w.IsUsing).OrderBy(o => o.ParameterIndex).ToList();
+
+                    if (IncludeSubQuery)
                     {
-                        var main = result.ParameterIndexs.First();
-                        EntityInfo.Alias = item.ResolveSqlOptions.UseCustomParameter ? $"{item.ResolveSqlOptions.CustomParameterName}{main.Value}" : main.Key;
+                        foreach (var lambdaParameterInfo in usingLambdaParameterInfos)
+                        {
+                            var firstJoinInfo = Join.LastOrDefault(f =>
+                            f.ExpressionId == lambdaParameterInfo.ParameterType.GUID.ToString()
+                            && f.EntityInfo.Alias == $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}");
+
+                            if (firstJoinInfo == null)
+                            {
+                                var entityInfo = lambdaParameterInfo.ParameterType.GetEntityInfo();
+                                entityInfo.Alias = $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}";
+
+                                var rightJoinInfo = new JoinInfo()
+                                {
+                                    ExpressionId = lambdaParameterInfo.ParameterType.GUID.ToString(),
+                                    EntityInfo = entityInfo,
+                                    JoinType = JoinType.Right
+                                };
+
+                                if (item.ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Join)
+                                {
+                                    rightJoinInfo.Where = result.SqlString;
+                                }
+                                else
+                                {
+                                    //可在这自动查找映射关系
+                                    throw new Exception($"未指定条件无法使用上级{lambdaParameterInfo.ParameterName}参数名.");
+                                }
+                                Join.Add(rightJoinInfo);
+                            }
+                        }
+                    }
+
+                    if (IsSubQuery || IncludeSubQuery)
+                    {
+                        var main = result.LambdaParameterInfos.First();
+                        EntityInfo.Alias = item.ResolveSqlOptions.UseCustomParameter ? $"{main.ResolveName}{main.ParameterIndex}" : main.ResolveName;
                     }
 
                     if (item.ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where)
@@ -304,18 +334,16 @@ namespace Fast.Framework.Abstract
                     else if (item.ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Join)
                     {
                         var joinInfo = this.Join.FirstOrDefault(f => f.ExpressionId == item.Id);
-                        if (joinInfo == null)
+                        if (joinInfo != null)
                         {
-                            throw new Exception($"JoinInfo对应的表达式ID {item.Id} 不存在.");
+                            var main = result.LambdaParameterInfos.First();
+                            var join = result.LambdaParameterInfos.Last();
+
+                            EntityInfo.Alias = item.ResolveSqlOptions.UseCustomParameter ? $"{item.ResolveSqlOptions.CustomParameterName}{main.ParameterIndex}" : main.ParameterName;
+
+                            joinInfo.EntityInfo.Alias = item.ResolveSqlOptions.UseCustomParameter ? $"{item.ResolveSqlOptions.CustomParameterName}{join.ParameterIndex}" : join.ParameterName;
+                            joinInfo.Where = result.SqlString;
                         }
-
-                        var main = result.ParameterIndexs.First();
-                        var join = result.ParameterIndexs.Last();
-
-                        EntityInfo.Alias = item.ResolveSqlOptions.UseCustomParameter ? $"{item.ResolveSqlOptions.CustomParameterName}{main.Value}" : main.Key;
-
-                        joinInfo.EntityDbMapping.Alias = item.ResolveSqlOptions.UseCustomParameter ? $"{item.ResolveSqlOptions.CustomParameterName}{join.Value}" : join.Key;
-                        joinInfo.Where = result.SqlString;
                     }
                     else if (item.ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAs || item.ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewColumn)
                     {
@@ -377,13 +405,13 @@ namespace Fast.Framework.Abstract
             {
                 return $"( {Union} ) ";
             }
-            else if (IsSubQuery)
+            else if (IsFromQuery)
             {
-                return $"( {SubQuerySql} ) x";
+                return $"( {FromQuerySql} ) x";
             }
             else
             {
-                if (Join.Count == 0 && ForceAlias == false)
+                if (Join.Count == 0 && !IsSubQuery && !IncludeSubQuery)
                 {
                     return identifier.Insert(1, EntityInfo.TableName);
                 }
@@ -429,25 +457,26 @@ namespace Fast.Framework.Abstract
                 sb.Append("\r\n");
             }
 
+            //子查询初始化别名
+            if ((IsSubQuery || IncludeSubQuery) && Expressions.ExpressionInfos.Count == 0)
+            {
+                EntityInfo.Alias = $"p{ParentLambdaParameterInfos.Max(m => m.ParameterIndex) + 1}";
+            }
+
             //初始化列
             if (string.IsNullOrWhiteSpace(SelectValue))
             {
-                if (ForceAlias && Expressions.ExpressionInfos.Count == 0)
-                {
-                    EntityInfo.Alias = $"p{ParentParameterIndexs?.Count + 1}";
-                }
-
                 var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped);
                 var columnNames = columnInfos.Select(s => s.ColumnName).ToList();
-                var selectValues = columnInfos.Select(s => $"{(Join.Count == 0 && !ForceAlias ? "" : $"{EntityInfo.Alias}.")}{identifier.Insert(1, s.ColumnName)}").ToList();
+                var selectValues = columnInfos.Select(s => $"{(Join.Count == 0 && !IsSubQuery && !IncludeSubQuery ? "" : $"{EntityInfo.Alias}.")}{identifier.Insert(1, s.ColumnName)}").ToList();
                 if (Join.Count > 0)
                 {
                     Join.ForEach(i =>
                     {
                         //层级过滤已存在的列
-                        var columnInfos = i.EntityDbMapping.ColumnsInfos.Where(w => !w.IsNotMapped);
+                        var columnInfos = i.EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped);
                         var filterColumnInfos = columnInfos.Where(w => !columnNames.Exists(e => e == w.ColumnName));
-                        selectValues.AddRange(filterColumnInfos.Select(s => $"{$"{i.EntityDbMapping.Alias}."}{identifier.Insert(1, s.ColumnName)}"));
+                        selectValues.AddRange(filterColumnInfos.Select(s => $"{$"{i.EntityInfo.Alias}."}{identifier.Insert(1, s.ColumnName)}"));
                         columnNames.AddRange(filterColumnInfos.Select(s => s.ColumnName));
                     });
                 }
@@ -468,11 +497,11 @@ namespace Fast.Framework.Abstract
                 {
                     if (s.IsSubQuery)
                     {
-                        return string.Format("{0} JOIN ( {1} ) {2} ON {3}", s.JoinType.ToString().ToUpper(), s.SubQuerySql, identifier.Insert(1, s.EntityDbMapping.Alias), s.Where);
+                        return string.Format("{0} JOIN ( {1} ) {2} ON {3}", s.JoinType.ToString().ToUpper(), s.SubQuerySql, identifier.Insert(1, s.EntityInfo.Alias), s.Where);
                     }
                     else
                     {
-                        return string.Format(JoinTemplate, s.JoinType.ToString().ToUpper(), identifier.Insert(1, s.EntityDbMapping.TableName), identifier.Insert(1, s.EntityDbMapping.Alias), s.Where);
+                        return string.Format(JoinTemplate, s.JoinType.ToString().ToUpper(), identifier.Insert(1, s.EntityInfo.TableName), identifier.Insert(1, s.EntityInfo.Alias), s.Where);
                     }
                 })));
             }
@@ -525,8 +554,8 @@ namespace Fast.Framework.Abstract
             queryBuilder.IncludeInfos.AddRange(this.IncludeInfos.Select(s => s.Clone()));
             queryBuilder.SetMemberInfos.AddRange(this.SetMemberInfos);
             queryBuilder.EntityInfo = this.EntityInfo.Clone();
-            queryBuilder.IsSubQuery = this.IsSubQuery;
-            queryBuilder.SubQuerySql = this.SubQuerySql;
+            queryBuilder.IsFromQuery = this.IsFromQuery;
+            queryBuilder.FromQuerySql = this.FromQuerySql;
             queryBuilder.IsDistinct = this.IsDistinct;
             queryBuilder.Take = this.Take;
             queryBuilder.Skip = this.Skip;
@@ -540,9 +569,10 @@ namespace Fast.Framework.Abstract
             queryBuilder.Join.AddRange(this.Join);
             queryBuilder.Where.AddRange(this.Where);
             queryBuilder.DbParameters.AddRange(this.DbParameters);
-            queryBuilder.ParentParameterIndexs = this.ParentParameterIndexs;
+            queryBuilder.ParentLambdaParameterInfos = this.ParentLambdaParameterInfos;
             queryBuilder.ParentParameterCount = this.ParentParameterCount;
-            queryBuilder.ForceAlias = this.ForceAlias;
+            queryBuilder.IncludeSubQuery = this.IncludeSubQuery;
+            queryBuilder.IsSubQuery = this.IsSubQuery;
             queryBuilder.GroupBy.AddRange(this.GroupBy);
             queryBuilder.Having.AddRange(this.Having);
             queryBuilder.OrderBy.AddRange(this.OrderBy);

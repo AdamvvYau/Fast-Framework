@@ -19,5 +19,17 @@ namespace Fast.Framework.Interfaces
         /// <param name="node">节点</param>
         /// <returns></returns>
         object Visit(Expression node);
+
+        /// <summary>
+        /// 方法调用前
+        /// </summary>
+        /// <returns></returns>
+        Action<object, MethodCallExpression> MethodCallBefore { get; set; }
+
+        /// <summary>
+        /// 方法调用后
+        /// </summary>
+        /// <returns></returns>
+        Action<object, object, MethodCallExpression> MethodCallAfter { get; set; }
     }
 }

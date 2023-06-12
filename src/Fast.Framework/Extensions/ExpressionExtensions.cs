@@ -61,6 +61,10 @@ namespace Fast.Framework.Extensions
 
             setMemberInfosMethodMapping = new List<string>()
             {
+                nameof(DbDataReaderExtensions.FirstBuild),
+                nameof(DbDataReaderExtensions.FirstBuildAsync),
+                nameof(DbDataReaderExtensions.ListBuild),
+                nameof(DbDataReaderExtensions.ListBuildAsync),
                 nameof(IQuery<object>.First),
                 nameof(IQuery<object>.FirstAsync),
                 nameof(IQuery<object>.ToArray),
@@ -199,40 +203,31 @@ namespace Fast.Framework.Extensions
             #region 聚合
             sqlserverFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name == "Query")
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MaxTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Max")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -245,40 +240,31 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MinTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Min")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -291,45 +277,31 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    if (methodCall.Arguments.Count > 0)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        foreach (var item in methodCall.Arguments)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            if (item is UnaryExpression)
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                var unaryExpression = item as UnaryExpression;
-                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-                                {
-                                    Expression = unaryExpression.Operand,
-                                    ResolveSqlOptions = new ResolveSqlOptions()
-                                    {
-                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                        DbType = resolve.ResolveSqlOptions.DbType
-                                    }
-                                });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                             }
-                            else
-                            {
-                                var value = resolve.GetValue.Visit(item);
-                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
-                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                    }
-                    else
-                    {
-                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
-                    }
+                        if (exp.Method.Name == "Count")
+                        {
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
 
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        }
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -342,40 +314,31 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.SumTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Sum")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -388,40 +351,31 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.AvgTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Avg")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -770,45 +724,62 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                foreach (var item in methodCall.Arguments)
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                 {
-                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    if (exp.Method.Name.StartsWith("Query"))
                     {
-                        Expression = (item as UnaryExpression).Operand,
-                        ResolveSqlOptions = new ResolveSqlOptions()
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                         {
-                            DbType = resolve.ResolveSqlOptions.DbType,
-                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                         }
-                    });
-                }
-
-                query.QueryBuilder.ForceAlias = true;
-                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
-
-                var sql = query.QueryBuilder.ToSqlString();
-                if (resolve.IsNot)
-                {
-                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
-                    resolve.IsNot = false;
-                }
-                else
-                {
-                    sqlBuilder.Append($"EXISTS ( {sql} )");
-                }
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "Any")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        if (resolve.IsNot)
+                        {
+                            sqlBuilder.Append($"NOT EXISTS ( {sql} )");
+                            resolve.IsNot = false;
+                        }
+                        else
+                        {
+                            sqlBuilder.Append($"EXISTS ( {sql} )");
+                        }
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
 
             sqlserverFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-                query.QueryBuilder.IsFirst = true;
-                var sql = query.QueryBuilder.ToSqlString();
-                sqlBuilder.Append($"( {sql} )");
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
+                {
+                    if (exp.Method.Name.StartsWith("Query"))
+                    {
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
+                        {
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                        }
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "First")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        sqlBuilder.Append($"( {sql} )");
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
             #endregion
 
@@ -983,40 +954,31 @@ namespace Fast.Framework.Extensions
             #region 聚合
             mysqlFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MaxTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Max")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -1029,40 +991,31 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MinTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Min")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -1075,45 +1028,31 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    if (methodCall.Arguments.Count > 0)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        foreach (var item in methodCall.Arguments)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            if (item is UnaryExpression)
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                var unaryExpression = item as UnaryExpression;
-                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-                                {
-                                    Expression = unaryExpression.Operand,
-                                    ResolveSqlOptions = new ResolveSqlOptions()
-                                    {
-                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                        DbType = resolve.ResolveSqlOptions.DbType
-                                    }
-                                });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                             }
-                            else
-                            {
-                                var value = resolve.GetValue.Visit(item);
-                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
-                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                    }
-                    else
-                    {
-                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
-                    }
+                        if (exp.Method.Name == "Count")
+                        {
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
 
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        }
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -1126,40 +1065,31 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.SumTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Sum")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -1172,40 +1102,31 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.AvgTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Avg")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -1561,45 +1482,62 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                foreach (var item in methodCall.Arguments)
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                 {
-                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    if (exp.Method.Name.StartsWith("Query"))
                     {
-                        Expression = (item as UnaryExpression).Operand,
-                        ResolveSqlOptions = new ResolveSqlOptions()
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                         {
-                            DbType = resolve.ResolveSqlOptions.DbType,
-                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                         }
-                    });
-                }
-
-                query.QueryBuilder.ForceAlias = true;
-                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
-
-                var sql = query.QueryBuilder.ToSqlString();
-                if (resolve.IsNot)
-                {
-                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
-                    resolve.IsNot = false;
-                }
-                else
-                {
-                    sqlBuilder.Append($"EXISTS ( {sql} )");
-                }
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "Any")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        if (resolve.IsNot)
+                        {
+                            sqlBuilder.Append($"NOT EXISTS ( {sql} )");
+                            resolve.IsNot = false;
+                        }
+                        else
+                        {
+                            sqlBuilder.Append($"EXISTS ( {sql} )");
+                        }
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
 
             mysqlFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-                query.QueryBuilder.IsFirst = true;
-                var sql = query.QueryBuilder.ToSqlString();
-                sqlBuilder.Append($"( {sql} )");
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
+                {
+                    if (exp.Method.Name.StartsWith("Query"))
+                    {
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
+                        {
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                        }
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "First")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        sqlBuilder.Append($"( {sql} )");
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
 
             #endregion
@@ -1793,40 +1731,31 @@ namespace Fast.Framework.Extensions
             #region 聚合
             oracleFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MaxTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Max")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -1839,40 +1768,31 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MinTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Min")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -1885,45 +1805,31 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    if (methodCall.Arguments.Count > 0)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        foreach (var item in methodCall.Arguments)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            if (item is UnaryExpression)
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                var unaryExpression = item as UnaryExpression;
-                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-                                {
-                                    Expression = unaryExpression.Operand,
-                                    ResolveSqlOptions = new ResolveSqlOptions()
-                                    {
-                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                        DbType = resolve.ResolveSqlOptions.DbType
-                                    }
-                                });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                             }
-                            else
-                            {
-                                var value = resolve.GetValue.Visit(item);
-                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
-                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                    }
-                    else
-                    {
-                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
-                    }
+                        if (exp.Method.Name == "Count")
+                        {
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
 
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        }
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -1936,40 +1842,31 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.SumTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Sum")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -1982,40 +1879,31 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.AvgTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Avg")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -2332,45 +2220,62 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                foreach (var item in methodCall.Arguments)
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                 {
-                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    if (exp.Method.Name.StartsWith("Query"))
                     {
-                        Expression = (item as UnaryExpression).Operand,
-                        ResolveSqlOptions = new ResolveSqlOptions()
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                         {
-                            DbType = resolve.ResolveSqlOptions.DbType,
-                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                         }
-                    });
-                }
-
-                query.QueryBuilder.ForceAlias = true;
-                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
-
-                var sql = query.QueryBuilder.ToSqlString();
-                if (resolve.IsNot)
-                {
-                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
-                    resolve.IsNot = false;
-                }
-                else
-                {
-                    sqlBuilder.Append($"EXISTS ( {sql} )");
-                }
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "Any")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        if (resolve.IsNot)
+                        {
+                            sqlBuilder.Append($"NOT EXISTS ( {sql} )");
+                            resolve.IsNot = false;
+                        }
+                        else
+                        {
+                            sqlBuilder.Append($"EXISTS ( {sql} )");
+                        }
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
 
             oracleFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-                query.QueryBuilder.IsFirst = true;
-                var sql = query.QueryBuilder.ToSqlString();
-                sqlBuilder.Append($"( {sql} )");
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
+                {
+                    if (exp.Method.Name.StartsWith("Query"))
+                    {
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
+                        {
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                        }
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "First")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        sqlBuilder.Append($"( {sql} )");
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
             #endregion
 
@@ -2530,40 +2435,31 @@ namespace Fast.Framework.Extensions
             #region 聚合
             pgsqlFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MaxTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Max")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -2576,40 +2472,31 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MinTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Min")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -2622,45 +2509,31 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    if (methodCall.Arguments.Count > 0)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        foreach (var item in methodCall.Arguments)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            if (item is UnaryExpression)
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                var unaryExpression = item as UnaryExpression;
-                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-                                {
-                                    Expression = unaryExpression.Operand,
-                                    ResolveSqlOptions = new ResolveSqlOptions()
-                                    {
-                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                        DbType = resolve.ResolveSqlOptions.DbType
-                                    }
-                                });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                             }
-                            else
-                            {
-                                var value = resolve.GetValue.Visit(item);
-                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
-                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                    }
-                    else
-                    {
-                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
-                    }
+                        if (exp.Method.Name == "Count")
+                        {
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
 
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        }
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -2673,40 +2546,31 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.SumTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Sum")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -2719,40 +2583,31 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.AvgTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Avg")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -3083,45 +2938,62 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                foreach (var item in methodCall.Arguments)
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                 {
-                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    if (exp.Method.Name.StartsWith("Query"))
                     {
-                        Expression = (item as UnaryExpression).Operand,
-                        ResolveSqlOptions = new ResolveSqlOptions()
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                         {
-                            DbType = resolve.ResolveSqlOptions.DbType,
-                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                         }
-                    });
-                }
-
-                query.QueryBuilder.ForceAlias = true;
-                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
-
-                var sql = query.QueryBuilder.ToSqlString();
-                if (resolve.IsNot)
-                {
-                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
-                    resolve.IsNot = false;
-                }
-                else
-                {
-                    sqlBuilder.Append($"EXISTS ( {sql} )");
-                }
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "Any")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        if (resolve.IsNot)
+                        {
+                            sqlBuilder.Append($"NOT EXISTS ( {sql} )");
+                            resolve.IsNot = false;
+                        }
+                        else
+                        {
+                            sqlBuilder.Append($"EXISTS ( {sql} )");
+                        }
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
 
             pgsqlFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-                query.QueryBuilder.IsFirst = true;
-                var sql = query.QueryBuilder.ToSqlString();
-                sqlBuilder.Append($"( {sql} )");
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
+                {
+                    if (exp.Method.Name.StartsWith("Query"))
+                    {
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
+                        {
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                        }
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "First")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        sqlBuilder.Append($"( {sql} )");
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
             #endregion
 
@@ -3290,40 +3162,31 @@ namespace Fast.Framework.Extensions
             #region 聚合
             sqliteFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MaxTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Max")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MaxTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -3336,40 +3199,31 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.MinTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Min")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.MinTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -3382,45 +3236,31 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    if (methodCall.Arguments.Count > 0)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        foreach (var item in methodCall.Arguments)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            if (item is UnaryExpression)
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                var unaryExpression = item as UnaryExpression;
-                                query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-                                {
-                                    Expression = unaryExpression.Operand,
-                                    ResolveSqlOptions = new ResolveSqlOptions()
-                                    {
-                                        ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                        DbType = resolve.ResolveSqlOptions.DbType
-                                    }
-                                });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                             }
-                            else
-                            {
-                                var value = resolve.GetValue.Visit(item);
-                                query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, value);
-                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                    }
-                    else
-                    {
-                        query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.CountTemplate, 1);
-                    }
+                        if (exp.Method.Name == "Count")
+                        {
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
 
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        }
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -3433,40 +3273,31 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.SumTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Sum")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.SumTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -3479,40 +3310,31 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
                 {
-                    var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                    query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-
-                    foreach (var item in methodCall.Arguments)
+                    resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
-                        if (item is UnaryExpression)
+                        if (exp.Method.Name.StartsWith("Query"))
                         {
-                            var unaryExpression = item as UnaryExpression;
-                            query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                            var query = result as IQuery;
+                            query.QueryBuilder.IsSubQuery = true;
+                            query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                            if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                             {
-                                Expression = unaryExpression.Operand,
-                                ResolveSqlOptions = new ResolveSqlOptions()
-                                {
-                                    ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType,
-                                    DbType = resolve.ResolveSqlOptions.DbType
-                                },
-                                IsFormat = true,
-                                Template = query.QueryBuilder.AvgTemplate
-                            });
+                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                            }
+                            query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
                         }
-                        else
+                        if (exp.Method.Name == "Avg")
                         {
-                            var value = resolve.GetValue.Visit(item);
-                            query.QueryBuilder.SelectValue = string.Format(query.QueryBuilder.AvgTemplate, value);
+                            var query = obj as IQuery;
+                            var sql = query.QueryBuilder.ToSqlString();
+
+                            sqlBuilder.Append($"( {sql} )");
+                            resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
                         }
-                    }
-
-                    var sql = query.QueryBuilder.ToSqlString();
-
-                    sqlBuilder.Append($"( {sql} )");
-                    resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    };
+                    resolve.GetValue.Visit(methodCall);
                 }
                 else
                 {
@@ -3847,45 +3669,62 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Any", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-
-                foreach (var item in methodCall.Arguments)
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                 {
-                    query.QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+                    if (exp.Method.Name.StartsWith("Query"))
                     {
-                        Expression = (item as UnaryExpression).Operand,
-                        ResolveSqlOptions = new ResolveSqlOptions()
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                         {
-                            DbType = resolve.ResolveSqlOptions.DbType,
-                            ResolveSqlType = resolve.ResolveSqlOptions.ResolveSqlType
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
                         }
-                    });
-                }
-
-                query.QueryBuilder.ForceAlias = true;
-                query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
-                query.QueryBuilder.ParentParameterIndexs = resolve.ParameterIndexs;
-
-                var sql = query.QueryBuilder.ToSqlString();
-                if (resolve.IsNot)
-                {
-                    sqlBuilder.Append($"NOT EXISTS ( {sql} )");
-                    resolve.IsNot = false;
-                }
-                else
-                {
-                    sqlBuilder.Append($"EXISTS ( {sql} )");
-                }
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "Any")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        if (resolve.IsNot)
+                        {
+                            sqlBuilder.Append($"NOT EXISTS ( {sql} )");
+                            resolve.IsNot = false;
+                        }
+                        else
+                        {
+                            sqlBuilder.Append($"EXISTS ( {sql} )");
+                        }
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
 
             sqliteFunc.Add("First", (resolve, methodCall, sqlBuilder) =>
             {
-                var query = resolve.GetValue.Visit(methodCall.Object) as IQuery;
-                query.QueryBuilder.IsFirst = true;
-                var sql = query.QueryBuilder.ToSqlString();
-                sqlBuilder.Append($"( {sql} )");
-                resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
+                {
+                    if (exp.Method.Name.StartsWith("Query"))
+                    {
+                        var query = result as IQuery;
+                        query.QueryBuilder.IsSubQuery = true;
+                        query.QueryBuilder.ParentLambdaParameterInfos = resolve.LambdaParameterInfos;
+                        if (resolve.ResolveSqlOptions.ParentLambdaParameterInfos != null && resolve.ResolveSqlOptions.ParentLambdaParameterInfos.Any())
+                        {
+                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(resolve.ResolveSqlOptions.ParentLambdaParameterInfos);
+                        }
+                        query.QueryBuilder.ParentParameterCount = resolve.DbParameters.Count;
+                    }
+                    if (exp.Method.Name == "First")
+                    {
+                        var query = obj as IQuery;
+                        var sql = query.QueryBuilder.ToSqlString();
+                        sqlBuilder.Append($"( {sql} )");
+                        resolve.DbParameters.AddRange(query.QueryBuilder.DbParameters);
+                    }
+                };
+                resolve.GetValue.Visit(methodCall);
             });
             #endregion
 
@@ -4005,7 +3844,7 @@ namespace Fast.Framework.Extensions
         /// <returns></returns>
         public static bool CheckSetMemberInfos(this MethodInfo methodInfo)
         {
-            if (!methodInfo.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces.IQuery"))
+            if (!methodInfo.DeclaringType.FullName.StartsWith("Fast.Framework"))
             {
                 return false;
             }
@@ -4030,7 +3869,7 @@ namespace Fast.Framework.Extensions
             result.SqlString = resolveSql.SqlBuilder.ToString();
             result.DbParameters = resolveSql.DbParameters;
             result.SetMemberInfos = resolveSql.SetMemberInfos;
-            result.ParameterIndexs = resolveSql.ParameterIndexs;
+            result.LambdaParameterInfos = resolveSql.LambdaParameterInfos;
             return result;
         }
 

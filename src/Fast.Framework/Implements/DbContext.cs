@@ -844,8 +844,8 @@ namespace Fast.Framework.Implements
 
             if (subQuery != null)
             {
-                queryBuilder.IsSubQuery = true;
-                queryBuilder.SubQuerySql = subQuery.QueryBuilder.ToSqlString();
+                queryBuilder.IsFromQuery = true;
+                queryBuilder.FromQuerySql = subQuery.QueryBuilder.ToSqlString();
                 queryBuilder.DbParameters.AddRange(subQuery.QueryBuilder.DbParameters);
                 queryBuilder.SelectValue = "*";
             }

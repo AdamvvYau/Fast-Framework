@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -44,6 +45,18 @@ namespace Fast.Framework.Implements
         private bool isNot;
 
         /// <summary>
+        /// 方法调用前
+        /// </summary>
+        /// <returns></returns>
+        public Action<object, MethodCallExpression> MethodCallBefore { get; set; }
+
+        /// <summary>
+        /// 方法调用后
+        /// </summary>
+        /// <returns></returns>
+        public Action<object, object, MethodCallExpression> MethodCallAfter { get; set; }
+
+        /// <summary>
         /// 构造方法
         /// </summary>
         public ExpressionResolveValue()
@@ -66,6 +79,14 @@ namespace Fast.Framework.Implements
                     {
                         return Visit(VisitLambda(node as LambdaExpression));
                     };
+                case NewExpression:
+                    {
+                        return VisitNew(node as NewExpression);
+                    }
+                case MemberInitExpression:
+                    {
+                        return VisitMemberInit(node as MemberInitExpression);
+                    }
                 case ListInitExpression:
                     {
                         return VisitListInit(node as ListInitExpression);
@@ -156,6 +177,51 @@ namespace Fast.Framework.Implements
                 list.Add(Visit(item.Arguments[0]));
             }
             return list;
+        }
+
+        /// <summary>
+        /// 访问New表达式
+        /// </summary>
+        /// <param name="node">节点</param>
+        /// <returns></returns>
+        private object VisitNew(NewExpression node)
+        {
+            var arguments = new List<object>();
+            foreach (var item in node.Arguments)
+            {
+                arguments.Add(Visit(item));
+            }
+            var obj = node.Constructor.Invoke(arguments.ToArray());
+            return obj;
+        }
+
+        /// <summary>
+        /// 访问成员初始化表达式
+        /// </summary>
+        /// <param name="node">节点</param>
+        /// <returns></returns>
+        private object VisitMemberInit(MemberInitExpression node)
+        {
+            var obj = Visit(node.NewExpression);
+            foreach (var item in node.Bindings)
+            {
+                if (item.BindingType == MemberBindingType.Assignment)
+                {
+                    var memberAssignment = item as MemberAssignment;
+                    object value = Visit(memberAssignment.Expression);
+                    if (memberAssignment.Member.MemberType == MemberTypes.Property)
+                    {
+                        var propertyInfo = memberAssignment.Member as PropertyInfo;
+                        propertyInfo.SetValue(obj, value);
+                    }
+                    else if (memberAssignment.Member.MemberType == MemberTypes.Field)
+                    {
+                        var fieldInfo = memberAssignment.Member as FieldInfo;
+                        fieldInfo.SetValue(obj, value);
+                    }
+                }
+            }
+            return obj;
         }
 
         /// <summary>
@@ -344,12 +410,16 @@ namespace Fast.Framework.Implements
             object result;
             if (node.Object == null)
             {
+                MethodCallBefore?.Invoke(null, node);
                 result = node.Method.Invoke(this, arguments.ToArray());
+                MethodCallAfter?.Invoke(null, result, node);
             }
             else
             {
                 var obj = Visit(node.Object);
+                MethodCallBefore?.Invoke(obj, node);
                 result = node.Method.Invoke(obj, arguments.ToArray());
+                MethodCallAfter?.Invoke(obj, result, node);
             }
             if (result != null && result.GetType().Equals(typeof(bool)) && isNot)
             {
@@ -398,6 +468,10 @@ namespace Fast.Framework.Implements
 
             if (node.Expression != null)
             {
+                if (node.Expression is ParameterExpression)
+                {
+                    throw new Exception($"{node},非表达式无法获取值.");
+                }
                 if (node.Expression.NodeType == ExpressionType.MemberAccess || node.Expression.NodeType == ExpressionType.Constant)
                 {
                     memberInfos.Push(new MemberInfoEx()
