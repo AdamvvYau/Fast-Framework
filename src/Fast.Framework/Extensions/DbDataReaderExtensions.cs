@@ -139,25 +139,36 @@ namespace Fast.Framework.Extensions
                             var isDBNullMethodCall = Expression.Call(parameterExpression, isDBNullMethod, constantExpression);
                             Expression getValueExpression;
 
+                            if (!getMethodCache.ContainsKey(dbColumns[i].DataType))
+                            {
+                                throw new Exception($"该类型不支持绑定{dbColumns[i].DataType.FullName}.");
+                            }
+
+                            var getMethod = getMethodCache[dbColumns[i].DataType];
+
                             if (columnInfo.IsJson)
                             {
-                                if (!dbColumns[i].DataType.Equals(typeof(string)))
+                                if (!getMethod.ReturnType.Equals(typeof(string)))
                                 {
                                     throw new Exception($"数据库列{dbColumns[i].ColumnName}不是字符串类型不支持Json序列化.");
                                 }
                                 var genericMethod = typeof(Json).GetMethod("Deserialize", new Type[] { typeof(string), typeof(JsonSerializerOptions) });
-                                var deserializeMethod = genericMethod.MakeGenericMethod(columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType);
 
-                                var getMethod = getMethodCache[dbColumns[i].DataType];
+                                var deserializeType = columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType;
+
+                                var deserializeMethod = genericMethod.MakeGenericMethod(deserializeType);
+
+                                MemberInfo memberInfo = columnInfo.IsField ? columnInfo.FieldInfo : columnInfo.PropertyInfo;
+
+                                if (entityInfo.IsAnonymousType)
+                                {
+                                    memberInfo = entityInfo.EntityType.GetField($"<{memberInfo.Name}>i__Field", BindingFlags.NonPublic | BindingFlags.Instance);
+                                }
                                 getValueExpression = Expression.Call(null, deserializeMethod, new List<Expression>() { Expression.Call(parameterExpression, getMethod, constantExpression), Expression.Default(typeof(JsonSerializerOptions)) });
-                                memberBindings.Add(Expression.Bind(columnInfo.IsField ? columnInfo.FieldInfo : columnInfo.PropertyInfo, getValueExpression));
+                                memberBindings.Add(Expression.Bind(memberInfo, getValueExpression));
                             }
                             else
                             {
-                                if (!getMethodCache.ContainsKey(dbColumns[i].DataType))
-                                {
-                                    throw new Exception($"该类型不支持绑定{dbColumns[i].DataType.FullName}.");
-                                }
                                 var mapperType = columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType;
                                 var isConvert = false;
 
@@ -168,7 +179,6 @@ namespace Fast.Framework.Extensions
                                     isConvert = true;
                                 }
 
-                                var getMethod = getMethodCache[dbColumns[i].DataType];
                                 getValueExpression = Expression.Call(parameterExpression, getMethod, constantExpression);
 
                                 //返回类型

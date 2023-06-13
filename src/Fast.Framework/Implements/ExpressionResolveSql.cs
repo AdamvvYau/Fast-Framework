@@ -495,7 +495,7 @@ namespace Fast.Framework.Implements
                         var name = node.Members[i].GetCustomAttribute<ColumnAttribute>(false)?.Name;
                         if (ResolveSqlOptions.IgnoreIdentifier)
                         {
-                            SqlBuilder.Append(name == null ? node.Members[i].Name : name);
+                            SqlBuilder.Append(name ?? node.Members[i].Name);
                         }
                         else
                         {
@@ -721,7 +721,7 @@ namespace Fast.Framework.Implements
                     if (!ResolveSqlOptions.IgnoreColumnAttribute)
                     {
                         var columnAttribute = node.Member.GetCustomAttribute<ColumnAttribute>(false);
-                        if (columnAttribute != null)
+                        if (columnAttribute != null && !string.IsNullOrWhiteSpace(columnAttribute.Name))
                         {
                             memberName = columnAttribute.Name;
                         }
