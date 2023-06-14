@@ -262,21 +262,7 @@ namespace Fast.Framework.Extensions
                 {
                     if (item.Value != null)
                     {
-                        if (entityInfo.IsAnonymousType)
-                        {
-                            var fieldInfo = entityInfo.EntityType.GetField($"<{item.MemberInfo.Name}>i__Field", BindingFlags.NonPublic | BindingFlags.Instance);
-                            fieldInfo.SetValue(obj, item.Value);
-                        }
-                        else if (item.MemberInfo.MemberType == MemberTypes.Property)
-                        {
-                            var propertyInfo = item.MemberInfo as PropertyInfo;
-                            propertyInfo.SetValue(obj, item.Value);
-                        }
-                        else if (item.MemberInfo.MemberType == MemberTypes.Field)
-                        {
-                            var fieldInfo = item.MemberInfo as FieldInfo;
-                            fieldInfo.SetValue(obj, item.Value);
-                        }
+                        item.MemberInfo.SetValue(obj, item.Value);
                     }
                 }
             }
@@ -287,11 +273,11 @@ namespace Fast.Framework.Extensions
         /// </summary>
         /// <param name="queryBuilder">查询构建</param>
         /// <param name="list">列表</param> 
-        public static void SetMemberData<T>(this QueryBuilder queryBuilder, List<T> objList)
+        public static void SetMemberData<T>(this QueryBuilder queryBuilder, List<T> list)
         {
-            if (objList != null && objList.Any())
+            if (list != null && list.Any())
             {
-                foreach (var item in objList)
+                foreach (var item in list)
                 {
                     queryBuilder.SetMemberData(item);
                 }

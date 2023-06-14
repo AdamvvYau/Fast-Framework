@@ -72,8 +72,8 @@ namespace Fast.Framework.Extensions
         /// <summary>
         /// 初始化列信息
         /// </summary>
-        /// <param name="columnInfo"></param>
-        /// <param name="memberInfo"></param>
+        /// <param name="columnInfo">列信息</param>
+        /// <param name="memberInfo">成员信息</param>
         private static void InitColumnInfo(ColumnInfo columnInfo, MemberInfo memberInfo)
         {
             var databaseGeneratedAttribute = memberInfo.GetCustomAttribute<DatabaseGeneratedAttribute>(false);

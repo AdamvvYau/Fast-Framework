@@ -665,7 +665,7 @@ namespace Fast.Framework.Implements
             if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter && memberInfos.Count > 0)
             {
                 var parameterExpression = node.Expression as ParameterExpression;
-                throw new Exception($"不支持{parameterExpression.Name}.{node.Member.Name}.{memberInfos.Pop().Member.Name}多级访问.");
+                throw new Exception($"不支持{parameterExpression.Name}.{node.Member.Name}.{memberInfos.Pop().MemberInfo.Name}多级访问.");
             }
             #endregion
 
@@ -675,7 +675,7 @@ namespace Fast.Framework.Implements
                 memberInfos.Push(new MemberInfoEx()
                 {
                     ArrayIndex = arrayIndexs,
-                    Member = node.Member
+                    MemberInfo = node.Member
                 });
                 return Expression.Constant(default(DateTime));
             }
@@ -772,7 +772,7 @@ namespace Fast.Framework.Implements
                     memberInfos.Push(new MemberInfoEx()
                     {
                         ArrayIndex = arrayIndexs,
-                        Member = node.Member
+                        MemberInfo = node.Member
                     });
                 }
                 else if (node.Expression.NodeType == ExpressionType.ListInit || node.Expression.NodeType == ExpressionType.NewArrayInit)
@@ -780,7 +780,7 @@ namespace Fast.Framework.Implements
                     memberInfos.Push(new MemberInfoEx()
                     {
                         ArrayIndex = arrayIndexs,
-                        Member = node.Member
+                        MemberInfo = node.Member
                     });
 
                     return Visit(Expression.Constant(GetValue.Visit(node.Expression)));

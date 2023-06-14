@@ -16,9 +16,9 @@ namespace Fast.Framework.Models
         public Stack<int> ArrayIndex { get; set; }
 
         /// <summary>
-        /// 成员
+        /// 成员信息
         /// </summary>
-        public MemberInfo Member { get; set; }
+        public MemberInfo MemberInfo { get; set; }
 
         /// <summary>
         /// 构造方法

@@ -91,12 +91,219 @@ namespace Fast.Framework.Extensions
         #endregion
 
         /// <summary>
-        /// 数据绑定表达式构建
+        /// 绑定表达式构建
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="dbColumns">数据库列</param>
         /// <returns></returns>
-        private static Func<DbDataReader, T> DataBindingExpBuild<T>(this ReadOnlyCollection<DbColumn> dbColumns)
+        private static Func<DbDataReader, T> BindExpBuild<T>(this ReadOnlyCollection<DbColumn> dbColumns)
+        {
+            var parameterExpression = Expression.Parameter(typeof(DbDataReader), "r");
+
+            var arguments = new List<Expression>();
+            var memberBindings = new List<MemberBinding>();
+
+            var entityInfo = typeof(T).GetEntityInfo();
+
+            for (int i = 0; i < dbColumns.Count; i++)
+            {
+                var columnInfo = entityInfo.ColumnsInfos.FirstOrDefault(f => f.ColumnName == dbColumns[i].ColumnName);
+
+                if (columnInfo == null && entityInfo.IsAnonymousType && dbColumns[i].ColumnName.StartsWith("fast_args_index_"))
+                {
+                    var index = Convert.ToInt32(dbColumns[i].ColumnName.Split("_")[3]);
+                    arguments.Insert(index, Expression.Default(entityInfo.ColumnsInfos[index].PropertyInfo.PropertyType));
+                }
+                else if (columnInfo != null)
+                {
+                    var constantExpression = Expression.Constant(i);
+                    var isDBNullMethodCall = Expression.Call(parameterExpression, isDBNullMethod, constantExpression);
+                    Expression getValueExpression;
+
+                    if (!getMethodCache.ContainsKey(dbColumns[i].DataType))
+                    {
+                        throw new Exception($"该类型不支持绑定{dbColumns[i].DataType.FullName}.");
+                    }
+
+                    var memberType = columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType;
+
+                    var getMethod = getMethodCache[dbColumns[i].DataType];
+
+                    if (columnInfo.IsJson)
+                    {
+                        if (!getMethod.ReturnType.Equals(typeof(string)))
+                        {
+                            throw new Exception($"数据库列{dbColumns[i].ColumnName}不是字符串类型不支持Json序列化.");
+                        }
+                        var genericMethod = typeof(Json).GetMethod("Deserialize", new Type[] { typeof(string), typeof(JsonSerializerOptions) });
+
+                        var deserializeMethod = genericMethod.MakeGenericMethod(columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType);
+
+                        MemberInfo memberInfo = memberInfo = columnInfo.IsField ? columnInfo.FieldInfo : columnInfo.PropertyInfo;
+
+                        if (entityInfo.IsAnonymousType)
+                        {
+                            memberInfo = entityInfo.EntityType.GetField($"<{memberInfo.Name}>i__Field", BindingFlags.NonPublic | BindingFlags.Instance);
+                        }
+                        getValueExpression = Expression.Call(null, deserializeMethod, new List<Expression>() { Expression.Call(parameterExpression, getMethod, constantExpression), Expression.Default(typeof(JsonSerializerOptions)) });
+                        memberBindings.Add(Expression.Bind(memberInfo, getValueExpression));
+                    }
+                    else
+                    {
+                        var mapperType = memberType;
+                        var isConvert = false;
+
+                        //获取可空类型具体类型
+                        if (columnInfo.IsNullable)
+                        {
+                            mapperType = mapperType.GenericTypeArguments[0];
+                            isConvert = true;
+                        }
+
+                        getValueExpression = Expression.Call(parameterExpression, getMethod, constantExpression);
+
+                        //返回类型
+                        var returnType = getMethod.ReturnType;
+
+                        if (getMethod.ReturnType.Equals(typeof(float)) || getMethod.ReturnType.Equals(typeof(double)) || getMethod.ReturnType.Equals(typeof(decimal)))
+                        {
+                            //格式化去除后面多余的0
+                            var toString = getMethod.ReturnType.GetMethod("ToString", new Type[] { typeof(string) });
+                            getValueExpression = Expression.Call(getValueExpression, toString, Expression.Constant("G0"));
+                            returnType = typeof(string);//重定义返回类型
+                        }
+
+                        if (mapperType == typeof(object))
+                        {
+                            isConvert = true;
+                        }
+                        else if (mapperType != returnType)
+                        {
+                            if (mapperType.Equals(typeof(Guid)))
+                            {
+                                getValueExpression = Expression.New(typeof(Guid).GetConstructor(new Type[] { typeof(string) }), getValueExpression);
+                            }
+                            else
+                            {
+                                if (!convertMethodName.ContainsKey(mapperType))
+                                {
+                                    throw new Exception($"该类型转换不受支持{mapperType.FullName}.");
+                                }
+                                var convertMethodInfo = typeof(Convert).GetMethod(convertMethodName[mapperType], new Type[] { returnType });
+                                getValueExpression = Expression.Call(convertMethodInfo, getValueExpression);
+                            }
+                        }
+
+                        if (isConvert)
+                        {
+                            getValueExpression = Expression.Convert(getValueExpression, memberType);
+                        }
+                    }
+
+                    //数据列允许DBNull增加IsDbNull判断
+                    if (dbColumns[i].AllowDBNull == null || dbColumns[i].AllowDBNull.Value)
+                    {
+                        getValueExpression = Expression.Condition(isDBNullMethodCall, Expression.Default(memberType), getValueExpression);
+                    }
+
+                    if (entityInfo.IsAnonymousType)
+                    {
+                        arguments.Add(getValueExpression);
+                    }
+                    else
+                    {
+                        memberBindings.Add(Expression.Bind(columnInfo.IsField ? columnInfo.FieldInfo : columnInfo.PropertyInfo, getValueExpression));
+                    }
+                }
+            }
+            Expression initExpression = entityInfo.IsAnonymousType ? Expression.New(entityInfo.EntityType.GetConstructors()[0], arguments) : Expression.MemberInit(Expression.New(entityInfo.EntityType), memberBindings);
+            var lambdaExpression = Expression.Lambda<Func<DbDataReader, T>>(initExpression, parameterExpression);
+            return lambdaExpression.Compile();
+        }
+
+        /// <summary>
+        /// 绑定表达式构建
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dbColumn">数据库列</param>
+        /// <returns></returns>
+        private static Func<DbDataReader, T> BindExpBuild<T>(this DbColumn dbColumn)
+        {
+            var type = typeof(T);
+            if (!getMethodCache.ContainsKey(dbColumn.DataType))
+            {
+                throw new Exception($"该类型不支持绑定{dbColumn.DataType.FullName}.");
+            }
+            var mapperType = type;
+            var isConvert = false;
+
+            var parameterExpression = Expression.Parameter(typeof(DbDataReader), "r");
+
+            //获取可空类型具体类型
+            if (type.IsGenericType && type.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            {
+                mapperType = type.GenericTypeArguments[0];
+                isConvert = true;
+            }
+            var constantExpression = Expression.Constant(0);
+            var isDBNullMethodCall = Expression.Call(parameterExpression, isDBNullMethod, constantExpression);
+            var getMethod = getMethodCache[dbColumn.DataType];
+            Expression getValueExpression = Expression.Call(parameterExpression, getMethod, constantExpression);
+
+            //返回类型
+            var returnType = getMethod.ReturnType;
+
+            if (getMethod.ReturnType.Equals(typeof(float)) || getMethod.ReturnType.Equals(typeof(double)) || getMethod.ReturnType.Equals(typeof(decimal)))
+            {
+                //格式化去除后面多余的0
+                var toString = getMethod.ReturnType.GetMethod("ToString", new Type[] { typeof(string) });
+                getValueExpression = Expression.Call(getValueExpression, toString, Expression.Constant("G0"));
+                returnType = typeof(string);//重定义返回类型
+            }
+
+            if (mapperType == typeof(object))
+            {
+                isConvert = true;
+            }
+            else if (mapperType != returnType)
+            {
+                if (mapperType.Equals(typeof(Guid)))
+                {
+                    getValueExpression = Expression.New(typeof(Guid).GetConstructor(new Type[] { typeof(string) }), getValueExpression);
+                }
+                else
+                {
+                    if (!convertMethodName.ContainsKey(mapperType))
+                    {
+                        throw new Exception($"该类型转换不受支持{mapperType.FullName}.");
+                    }
+                    var convertMethodInfo = typeof(Convert).GetMethod(convertMethodName[mapperType], new Type[] { returnType });
+                    getValueExpression = Expression.Call(convertMethodInfo, getValueExpression);
+                }
+            }
+
+            if (isConvert)
+            {
+                getValueExpression = Expression.Convert(getValueExpression, type);
+            }
+
+            //数据列允许DBNull增加IsDbNull判断
+            if (dbColumn.AllowDBNull == null || dbColumn.AllowDBNull.Value)
+            {
+                getValueExpression = Expression.Condition(isDBNullMethodCall, Expression.Default(type), getValueExpression);
+            }
+
+            var lambdaExpression = Expression.Lambda<Func<DbDataReader, T>>(getValueExpression, parameterExpression);
+            return lambdaExpression.Compile();
+        }
+
+        /// <summary>
+        /// 获取数据绑定表达式
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dbColumns">数据库列</param>
+        /// <returns></returns>
+        private static Func<DbDataReader, T> GetDataBindExp<T>(this ReadOnlyCollection<DbColumn> dbColumns)
         {
             var type = typeof(T);
 
@@ -116,195 +323,11 @@ namespace Fast.Framework.Extensions
 
             return StaticCache<Func<DbDataReader, T>>.GetOrAdd(cacheKey, () =>
             {
-                var parameterExpression = Expression.Parameter(typeof(DbDataReader), "r");
                 if (type.IsClass && type != typeof(string))
                 {
-                    var entityInfo = type.GetEntityInfo();
-
-                    var arguments = new List<Expression>();
-                    var memberBindings = new List<MemberBinding>();
-
-                    for (int i = 0; i < dbColumns.Count; i++)
-                    {
-                        var columnInfo = entityInfo.ColumnsInfos.FirstOrDefault(f => f.ColumnName == dbColumns[i].ColumnName);
-
-                        if (columnInfo == null && entityInfo.IsAnonymousType && dbColumns[i].ColumnName.StartsWith("fast_args_index_"))
-                        {
-                            var index = Convert.ToInt32(dbColumns[i].ColumnName.Split("_")[3]);
-                            arguments.Insert(index, Expression.Default(entityInfo.ColumnsInfos[index].PropertyInfo.PropertyType));
-                        }
-                        else if (columnInfo != null)
-                        {
-                            var constantExpression = Expression.Constant(i);
-                            var isDBNullMethodCall = Expression.Call(parameterExpression, isDBNullMethod, constantExpression);
-                            Expression getValueExpression;
-
-                            if (!getMethodCache.ContainsKey(dbColumns[i].DataType))
-                            {
-                                throw new Exception($"该类型不支持绑定{dbColumns[i].DataType.FullName}.");
-                            }
-
-                            var getMethod = getMethodCache[dbColumns[i].DataType];
-
-                            if (columnInfo.IsJson)
-                            {
-                                if (!getMethod.ReturnType.Equals(typeof(string)))
-                                {
-                                    throw new Exception($"数据库列{dbColumns[i].ColumnName}不是字符串类型不支持Json序列化.");
-                                }
-                                var genericMethod = typeof(Json).GetMethod("Deserialize", new Type[] { typeof(string), typeof(JsonSerializerOptions) });
-
-                                var deserializeType = columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType;
-
-                                var deserializeMethod = genericMethod.MakeGenericMethod(deserializeType);
-
-                                MemberInfo memberInfo = columnInfo.IsField ? columnInfo.FieldInfo : columnInfo.PropertyInfo;
-
-                                if (entityInfo.IsAnonymousType)
-                                {
-                                    memberInfo = entityInfo.EntityType.GetField($"<{memberInfo.Name}>i__Field", BindingFlags.NonPublic | BindingFlags.Instance);
-                                }
-                                getValueExpression = Expression.Call(null, deserializeMethod, new List<Expression>() { Expression.Call(parameterExpression, getMethod, constantExpression), Expression.Default(typeof(JsonSerializerOptions)) });
-                                memberBindings.Add(Expression.Bind(memberInfo, getValueExpression));
-                            }
-                            else
-                            {
-                                var mapperType = columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType;
-                                var isConvert = false;
-
-                                //获取可空类型具体类型
-                                if (columnInfo.IsNullable)
-                                {
-                                    mapperType = columnInfo.IsField ? columnInfo.FieldInfo.FieldType.GenericTypeArguments[0] : columnInfo.PropertyInfo.PropertyType.GenericTypeArguments[0];
-                                    isConvert = true;
-                                }
-
-                                getValueExpression = Expression.Call(parameterExpression, getMethod, constantExpression);
-
-                                //返回类型
-                                var returnType = getMethod.ReturnType;
-
-                                if (getMethod.ReturnType.Equals(typeof(float)) || getMethod.ReturnType.Equals(typeof(double)) || getMethod.ReturnType.Equals(typeof(decimal)))
-                                {
-                                    //格式化去除后面多余的0
-                                    var toString = getMethod.ReturnType.GetMethod("ToString", new Type[] { typeof(string) });
-                                    getValueExpression = Expression.Call(getValueExpression, toString, Expression.Constant("G0"));
-                                    returnType = typeof(string);//重定义返回类型
-                                }
-
-                                if (mapperType == typeof(object))
-                                {
-                                    isConvert = true;
-                                }
-                                else if (mapperType != returnType)
-                                {
-                                    if (mapperType.Equals(typeof(Guid)))
-                                    {
-                                        getValueExpression = Expression.New(typeof(Guid).GetConstructor(new Type[] { typeof(string) }), getValueExpression);
-                                    }
-                                    else
-                                    {
-                                        if (!convertMethodName.ContainsKey(mapperType))
-                                        {
-                                            throw new Exception($"该类型转换不受支持{mapperType.FullName}.");
-                                        }
-                                        var convertMethodInfo = typeof(Convert).GetMethod(convertMethodName[mapperType], new Type[] { returnType });
-                                        getValueExpression = Expression.Call(convertMethodInfo, getValueExpression);
-                                    }
-                                }
-
-                                if (isConvert)
-                                {
-                                    getValueExpression = Expression.Convert(getValueExpression, columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType);
-                                }
-                            }
-
-                            //数据列允许DBNull增加IsDbNull判断
-                            if (dbColumns[i].AllowDBNull == null || dbColumns[i].AllowDBNull.Value)
-                            {
-                                getValueExpression = Expression.Condition(isDBNullMethodCall, Expression.Default(columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType), getValueExpression);
-                            }
-
-                            if (entityInfo.IsAnonymousType)
-                            {
-                                arguments.Add(getValueExpression);
-                            }
-                            else
-                            {
-                                memberBindings.Add(Expression.Bind(columnInfo.IsField ? columnInfo.FieldInfo : columnInfo.PropertyInfo, getValueExpression));
-                            }
-                        }
-                    }
-                    Expression initExpression = entityInfo.IsAnonymousType ? Expression.New(type.GetConstructors()[0], arguments) : Expression.MemberInit(Expression.New(type), memberBindings);
-                    var lambdaExpression = Expression.Lambda<Func<DbDataReader, T>>(initExpression, parameterExpression);
-                    return lambdaExpression.Compile();
+                    return dbColumns.BindExpBuild<T>();
                 }
-                else
-                {
-                    if (!getMethodCache.ContainsKey(dbColumns[0].DataType))
-                    {
-                        throw new Exception($"该类型不支持绑定{dbColumns[0].DataType.FullName}.");
-                    }
-                    var mapperType = type;
-                    var isConvert = false;
-
-                    //获取可空类型具体类型
-                    if (type.IsGenericType && type.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
-                    {
-                        mapperType = type.GenericTypeArguments[0];
-                        isConvert = true;
-                    }
-                    var constantExpression = Expression.Constant(0);
-                    var isDBNullMethodCall = Expression.Call(parameterExpression, isDBNullMethod, constantExpression);
-                    var getMethod = getMethodCache[dbColumns[0].DataType];
-                    Expression getValueExpression = Expression.Call(parameterExpression, getMethod, constantExpression);
-
-                    //返回类型
-                    var returnType = getMethod.ReturnType;
-
-                    if (getMethod.ReturnType.Equals(typeof(float)) || getMethod.ReturnType.Equals(typeof(double)) || getMethod.ReturnType.Equals(typeof(decimal)))
-                    {
-                        //格式化去除后面多余的0
-                        var toString = getMethod.ReturnType.GetMethod("ToString", new Type[] { typeof(string) });
-                        getValueExpression = Expression.Call(getValueExpression, toString, Expression.Constant("G0"));
-                        returnType = typeof(string);//重定义返回类型
-                    }
-
-                    if (mapperType == typeof(object))
-                    {
-                        isConvert = true;
-                    }
-                    else if (mapperType != returnType)
-                    {
-                        if (mapperType.Equals(typeof(Guid)))
-                        {
-                            getValueExpression = Expression.New(typeof(Guid).GetConstructor(new Type[] { typeof(string) }), getValueExpression);
-                        }
-                        else
-                        {
-                            if (!convertMethodName.ContainsKey(mapperType))
-                            {
-                                throw new Exception($"该类型转换不受支持{mapperType.FullName}.");
-                            }
-                            var convertMethodInfo = typeof(Convert).GetMethod(convertMethodName[mapperType], new Type[] { returnType });
-                            getValueExpression = Expression.Call(convertMethodInfo, getValueExpression);
-                        }
-                    }
-
-                    if (isConvert)
-                    {
-                        getValueExpression = Expression.Convert(getValueExpression, type);
-                    }
-
-                    //数据列允许DBNull增加IsDbNull判断
-                    if (dbColumns[0].AllowDBNull == null || dbColumns[0].AllowDBNull.Value)
-                    {
-                        getValueExpression = Expression.Condition(isDBNullMethodCall, Expression.Default(type), getValueExpression);
-                    }
-
-                    var lambdaExpression = Expression.Lambda<Func<DbDataReader, T>>(getValueExpression, parameterExpression);
-                    return lambdaExpression.Compile();
-                }
+                return dbColumns[0].BindExpBuild<T>();
             });
         }
 
@@ -347,7 +370,7 @@ namespace Fast.Framework.Extensions
             T t = default;
             if (reader.Read())
             {
-                var func = dbColumns.DataBindingExpBuild<T>();
+                var func = dbColumns.GetDataBindExp<T>();
                 t = func.Invoke(reader);
             }
             reader.FinalProcessing();
@@ -367,7 +390,7 @@ namespace Fast.Framework.Extensions
             T t = default;
             if (await reader.ReadAsync())
             {
-                var func = dbColumns.DataBindingExpBuild<T>();
+                var func = dbColumns.GetDataBindExp<T>();
                 t = func.Invoke(reader);
             }
             await reader.FinalProcessingAsync();
@@ -385,7 +408,7 @@ namespace Fast.Framework.Extensions
             var reader = dataReader;
             var dbColumns = reader.GetColumnSchema();
             var list = new List<T>();
-            var func = dbColumns.DataBindingExpBuild<T>();
+            var func = dbColumns.GetDataBindExp<T>();
             while (reader.Read())
             {
                 list.Add(func.Invoke(reader));
@@ -405,7 +428,7 @@ namespace Fast.Framework.Extensions
             var reader = await dataReader;
             var dbColumns = await reader.GetColumnSchemaAsync();
             var list = new List<T>();
-            var func = dbColumns.DataBindingExpBuild<T>();
+            var func = dbColumns.GetDataBindExp<T>();
             while (await reader.ReadAsync())
             {
                 list.Add(func.Invoke(reader));

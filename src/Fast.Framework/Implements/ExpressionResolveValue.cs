@@ -460,7 +460,7 @@ namespace Fast.Framework.Implements
                 memberInfos.Push(new MemberInfoEx()
                 {
                     ArrayIndex = arrayIndexs,
-                    Member = node.Member
+                    MemberInfo = node.Member
                 });
                 return Expression.Constant(default(DateTime));
             }
@@ -477,7 +477,7 @@ namespace Fast.Framework.Implements
                     memberInfos.Push(new MemberInfoEx()
                     {
                         ArrayIndex = arrayIndexs,
-                        Member = node.Member
+                        MemberInfo = node.Member
                     });
                 }
             }

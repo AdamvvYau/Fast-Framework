@@ -30,8 +30,10 @@ namespace Fast.Framework.Extensions
         {
             var type = source.First().GetType();
             var entityInfo = type.GetEntityInfo();
-            var dt = new DataTable();
-            dt.TableName = entityInfo.TableName;
+            var dt = new DataTable
+            {
+                TableName = entityInfo.TableName
+            };
             var columnInfos = entityInfo.ColumnsInfos;
             if (filter != null)
             {
