@@ -203,7 +203,7 @@ namespace Fast.Framework.Extensions
             #region 聚合
             sqlserverFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -240,7 +240,7 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -277,7 +277,7 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -314,7 +314,7 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -351,7 +351,7 @@ namespace Fast.Framework.Extensions
 
             sqlserverFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -954,7 +954,7 @@ namespace Fast.Framework.Extensions
             #region 聚合
             mysqlFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -991,7 +991,7 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -1028,7 +1028,7 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -1065,7 +1065,7 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -1102,7 +1102,7 @@ namespace Fast.Framework.Extensions
 
             mysqlFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -1731,7 +1731,7 @@ namespace Fast.Framework.Extensions
             #region 聚合
             oracleFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -1768,7 +1768,7 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -1805,7 +1805,7 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -1842,7 +1842,7 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -1879,7 +1879,7 @@ namespace Fast.Framework.Extensions
 
             oracleFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -2435,7 +2435,7 @@ namespace Fast.Framework.Extensions
             #region 聚合
             pgsqlFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -2472,7 +2472,7 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -2509,7 +2509,7 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -2546,7 +2546,7 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -2583,7 +2583,7 @@ namespace Fast.Framework.Extensions
 
             pgsqlFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -3162,7 +3162,7 @@ namespace Fast.Framework.Extensions
             #region 聚合
             sqliteFunc.Add("Max", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -3199,7 +3199,7 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Min", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -3236,7 +3236,7 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Count", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -3273,7 +3273,7 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Sum", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
@@ -3310,7 +3310,7 @@ namespace Fast.Framework.Extensions
 
             sqliteFunc.Add("Avg", (resolve, methodCall, sqlBuilder) =>
             {
-                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework"))
+                if (methodCall.Method.DeclaringType.FullName.StartsWith("Fast.Framework.Interfaces"))
                 {
                     resolve.GetValue.MethodCallAfter = (obj, result, exp) =>
                     {
