@@ -39,6 +39,11 @@ namespace Fast.Framework.Extensions
         /// </summary>
         private static readonly MethodInfo isDBNullMethod;
 
+        /// <summary>
+        /// 是否空或空格字符串方法
+        /// </summary>
+        private static readonly MethodInfo isNullOrWhiteSpaceMethod;
+
         #region 初始化
         /// <summary>
         /// 静态构造方法
@@ -48,6 +53,8 @@ namespace Fast.Framework.Extensions
             var getValueMethod = typeof(IDataRecord).GetMethod("GetValue", new Type[] { typeof(int) });
 
             isDBNullMethod = typeof(IDataRecord).GetMethod("IsDBNull", new Type[] { typeof(int) });
+
+            isNullOrWhiteSpaceMethod = typeof(string).GetMethod("IsNullOrWhiteSpace", new Type[] { typeof(string) });
 
             getMethodCache = new Dictionary<Type, MethodInfo>()
             {
@@ -135,9 +142,9 @@ namespace Fast.Framework.Extensions
                         {
                             throw new Exception($"数据库列{dbColumns[i].ColumnName}不是字符串类型不支持Json序列化.");
                         }
-                        var genericMethod = typeof(Json).GetMethod("Deserialize", new Type[] { typeof(string), typeof(JsonSerializerOptions) });
+                        var deserializeGenericMethod = typeof(Json).GetMethod("Deserialize", new Type[] { typeof(string), typeof(JsonSerializerOptions) });
 
-                        var deserializeMethod = genericMethod.MakeGenericMethod(columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType);
+                        var deserializeMethod = deserializeGenericMethod.MakeGenericMethod(columnInfo.IsField ? columnInfo.FieldInfo.FieldType : columnInfo.PropertyInfo.PropertyType);
 
                         MemberInfo memberInfo = memberInfo = columnInfo.IsField ? columnInfo.FieldInfo : columnInfo.PropertyInfo;
 
@@ -145,8 +152,11 @@ namespace Fast.Framework.Extensions
                         {
                             memberInfo = entityInfo.EntityType.GetField($"<{memberInfo.Name}>i__Field", BindingFlags.NonPublic | BindingFlags.Instance);
                         }
-                        getValueExpression = Expression.Call(null, deserializeMethod, new List<Expression>() { Expression.Call(parameterExpression, getMethod, constantExpression), Expression.Default(typeof(JsonSerializerOptions)) });
-                        memberBindings.Add(Expression.Bind(memberInfo, getValueExpression));
+
+                        var getStringCall = Expression.Call(parameterExpression, getMethod, constantExpression);
+                        var isNullOrWhiteSpaceCall = Expression.Call(null, isNullOrWhiteSpaceMethod, new List<Expression>() { getStringCall });
+                        getValueExpression = Expression.Call(null, deserializeMethod, new List<Expression>() { getStringCall, Expression.Default(typeof(JsonSerializerOptions)) });
+                        getValueExpression = Expression.Condition(isNullOrWhiteSpaceCall, Expression.Default(memberType), getValueExpression);
                     }
                     else
                     {
