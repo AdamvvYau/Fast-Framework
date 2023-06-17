@@ -25,11 +25,11 @@ namespace Fast.Framework.Extensions
         }
 
         /// <summary>
-        /// 添加Fast工作单元
+        /// 添加工作单元
         /// </summary>
         /// <param name="service">服务</param>
         /// <returns></returns>
-        public static IServiceCollection AddFastUnitOfWork(this IServiceCollection service)
+        public static IServiceCollection AddUnitOfWork(this IServiceCollection service)
         {
             return service.AddScoped(typeof(IUnitOfWork), typeof(UnitOfWork));
         }

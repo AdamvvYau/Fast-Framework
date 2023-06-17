@@ -1215,7 +1215,7 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
   // 添加数据库上下文服务
   builder.Services.AddFastDbContext();
   // 添加工作单元服务
-  builder.Services.AddFastUnitOfWork();
+  builder.Services.AddUnitOfWork();
   
   // 加载数据库配置
   builder.Services.Configure<List<DbOptions>>(configuration.GetSection("DbConfig"));

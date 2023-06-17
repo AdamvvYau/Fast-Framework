@@ -34,7 +34,7 @@ builder.Services.Configure<List<DbOptions>>(builder.Configuration.GetSection("Db
 builder.Services.AddFastDbContext();
 
 //注册工作单元
-builder.Services.AddFastUnitOfWork();
+builder.Services.AddUnitOfWork();
 
 //注册Http上下文
 builder.Services.AddHttpContextAccessor();
