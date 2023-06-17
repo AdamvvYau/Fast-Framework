@@ -691,6 +691,20 @@ namespace Fast.Framework.Interfaces
         /// 插入
         /// </summary>
         /// <typeparam name="InsertTable">插入表</typeparam>
+        /// <returns></returns>
+        int Insert<InsertTable>();
+
+        /// <summary>
+        /// 插入异步
+        /// </summary>
+        /// <typeparam name="InsertTable">插入表</typeparam>
+        /// <returns></returns>
+        Task<int> InsertAsync<InsertTable>();
+
+        /// <summary>
+        /// 插入
+        /// </summary>
+        /// <typeparam name="InsertTable">插入表</typeparam>
         /// <param name="expression">表达式</param>
         /// <returns></returns>
         int Insert<InsertTable>(Expression<Func<InsertTable, object>> expression);

@@ -173,7 +173,7 @@ namespace Fast.Framework.Abstract
         /// <summary>
         /// 插入列
         /// </summary>
-        public string InsertColumns { get; set; }
+        public List<string> InsertColumns { get; set; }
 
         /// <summary>
         /// 选择模板
@@ -261,6 +261,7 @@ namespace Fast.Framework.Abstract
             GroupBy = new List<string>();
             Having = new List<string>();
             OrderBy = new List<string>();
+            InsertColumns = new List<string>();
         }
 
         /// <summary>
@@ -453,8 +454,15 @@ namespace Fast.Framework.Abstract
             //插入
             if (IsInsert)
             {
-                sb.AppendFormat(InsertTemplate, identifier.Insert(1, InsertTableName), InsertColumns);
-                sb.Append("\r\n");
+                var selectValue = string.Join(",", InsertColumns.Select(s => $"{identifier.Insert(1, s)}"));
+
+                if (string.IsNullOrWhiteSpace(SelectValue))
+                {
+                    SelectValue = selectValue;
+                }
+
+                sb.AppendFormat(InsertTemplate, identifier.Insert(1, InsertTableName), selectValue);
+                sb.Append("\r\n\r\n");
             }
 
             //子查询初始化别名

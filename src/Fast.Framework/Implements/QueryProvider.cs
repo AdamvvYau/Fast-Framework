@@ -18,6 +18,7 @@ using Fast.Framework.Enum;
 using Fast.Framework.Factory;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Fast.Framework
 {
@@ -1467,6 +1468,66 @@ namespace Fast.Framework
     {
 
         /// <summary>
+        /// 插入初始化
+        /// </summary>
+        /// <param name="tableName">表名称</param>
+        /// <param name="columns">列</param>
+        private void InsertInit(string tableName, List<string> columns)
+        {
+            if (string.IsNullOrWhiteSpace(tableName))
+            {
+                throw new ArgumentException($"{nameof(tableName)}不能为空.");
+            }
+            if (columns == null)
+            {
+                throw new ArgumentNullException(nameof(columns));
+            }
+            if (columns.Count == 0)
+            {
+                throw new ArgumentException($"{nameof(columns)}元素不能为0.");
+            }
+            QueryBuilder.IsInsert = true;
+            QueryBuilder.InsertTableName = tableName;
+            QueryBuilder.InsertColumns = columns;
+        }
+
+        /// <summary>
+        /// 插入初始化
+        /// </summary>
+        /// <typeparam name="InsertTable">插入表</typeparam>
+        /// <returns></returns>
+        private void InsertInit<InsertTable>()
+        {
+            var entity = typeof(InsertTable).GetEntityInfo();
+            var columns = entity.ColumnsInfos.Where(w => w.DatabaseGeneratedOption != DatabaseGeneratedOption.Identity && !w.IsNotMapped).Select(s => s.ColumnName).ToList();
+            InsertInit(entity.TableName, columns);
+        }
+
+        /// <summary>
+        /// 插入
+        /// </summary>
+        /// <typeparam name="InsertTable">插入表</typeparam>
+        /// <returns></returns>
+        public int Insert<InsertTable>()
+        {
+            InsertInit<InsertTable>();
+            var sql = QueryBuilder.ToSqlString();
+            return ado.ExecuteNonQuery(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters));
+        }
+
+        /// <summary>
+        /// 插入异步
+        /// </summary>
+        /// <typeparam name="InsertTable">插入表</typeparam>
+        /// <returns></returns>
+        public Task<int> InsertAsync<InsertTable>()
+        {
+            InsertInit<InsertTable>();
+            var sql = QueryBuilder.ToSqlString();
+            return ado.ExecuteNonQueryAsync(CommandType.Text, sql, ado.ConvertParameter(QueryBuilder.DbParameters));
+        }
+
+        /// <summary>
         /// 插入
         /// </summary>
         /// <typeparam name="InsertTable">插入表</typeparam>
@@ -1477,15 +1538,14 @@ namespace Fast.Framework
             var result = expression.ResolveSql(new ResolveSqlOptions()
             {
                 DbType = ado.DbOptions.DbType,
+                IgnoreIdentifier = true,
                 IgnoreParameter = true,
                 ResolveSqlType = ResolveSqlType.NewColumn
             });
 
             QueryBuilder.DbParameters.AddRange(result.DbParameters);
-
             var entityInfo = typeof(InsertTable).GetEntityInfo();
-
-            return Insert(entityInfo.TableName, result.SqlString);
+            return Insert(entityInfo.TableName, result.SqlString.Split(","));
         }
 
         /// <summary>
@@ -1499,15 +1559,14 @@ namespace Fast.Framework
             var result = expression.ResolveSql(new ResolveSqlOptions()
             {
                 DbType = ado.DbOptions.DbType,
+                IgnoreIdentifier = true,
                 IgnoreParameter = true,
                 ResolveSqlType = ResolveSqlType.NewColumn
             });
 
             QueryBuilder.DbParameters.AddRange(result.DbParameters);
-
             var entityInfo = typeof(InsertTable).GetEntityInfo();
-
-            return InsertAsync(entityInfo.TableName, result.SqlString);
+            return InsertAsync(entityInfo.TableName, result.SqlString.Split(","));
         }
 
         /// <summary>
@@ -1540,9 +1599,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public int Insert(string tableName, List<string> columns)
         {
-            QueryBuilder.IsInsert = true;
-            QueryBuilder.InsertTableName = tableName;
-            QueryBuilder.InsertColumns = string.Join(",", columns);
+            InsertInit(tableName, columns);
             return ado.ExecuteNonQuery(CommandType.Text, QueryBuilder.ToSqlString(), ado.ConvertParameter(QueryBuilder.DbParameters));
         }
 
@@ -1554,9 +1611,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public Task<int> InsertAsync(string tableName, List<string> columns)
         {
-            QueryBuilder.IsInsert = true;
-            QueryBuilder.InsertTableName = tableName;
-            QueryBuilder.InsertColumns = string.Join(",", columns);
+            InsertInit(tableName, columns);
             return ado.ExecuteNonQueryAsync(CommandType.Text, QueryBuilder.ToSqlString(), ado.ConvertParameter(QueryBuilder.DbParameters));
         }
     }
