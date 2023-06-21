@@ -108,7 +108,7 @@ namespace Fast.Framework.Abstract
         {
             var source = EntityInfo.TargetObj as IList;
 
-            var columnInfos = EntityInfo.ColumnsInfos.Where(w => w.DatabaseGeneratedOption != DatabaseGeneratedOption.Identity && !w.IsNotMapped).ToList();
+            var columnInfos = EntityInfo.ColumnsInfos.Where(w => w.DatabaseGeneratedOption != DatabaseGeneratedOption.Identity && !w.IsNotMapped && !w.IsNavigate).ToList();
 
             var rowCount = 2000 / columnInfos.Count;//每批次行数
 
@@ -253,7 +253,7 @@ namespace Fast.Framework.Abstract
                 var identifier = DbType.GetIdentifier();
                 var symbol = DbType.GetSymbol();
                 var sb = new StringBuilder();
-                var columnInfos = EntityInfo.ColumnsInfos.Where(w => w.DatabaseGeneratedOption != DatabaseGeneratedOption.Identity && !w.IsNotMapped);
+                var columnInfos = EntityInfo.ColumnsInfos.Where(w => w.DatabaseGeneratedOption != DatabaseGeneratedOption.Identity && !w.IsNotMapped && !w.IsNavigate);
                 var columnNames = string.Join(",", columnInfos.Select(s => $"{identifier.Insert(1, s.ColumnName)}"));
                 var parameterNames = string.Join(",", columnInfos.Select(s => $"{symbol}{s.ParameterName}"));
                 sb.AppendFormat(InsertTemplate, identifier.Insert(1, EntityInfo.TableName), columnNames, parameterNames);

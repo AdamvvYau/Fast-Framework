@@ -279,7 +279,7 @@ namespace Fast.Framework.Abstract
 
                 if (!AdditionalConditions)
                 {
-                    var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && (w.IsPrimaryKey || w.IsWhere));
+                    var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsNavigate && (w.IsPrimaryKey || w.IsWhere));
                     if (columnInfos.Any())
                     {
                         Where.Add(string.Join(" AND ", columnInfos.Select(s => $"{identifier.Insert(1, EntityInfo.Alias)}.{identifier.Insert(1, s.ColumnName)} = {identifier.Insert(1, JoinUpdateAlias)}.{identifier.Insert(1, s.ColumnName)}")));
@@ -294,7 +294,7 @@ namespace Fast.Framework.Abstract
 
                 (List<List<List<ColumnInfo>>>, List<IGrouping<int, FastParameter>>) groupData = CommandBatchGroupData();
 
-                var setValues = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsPrimaryKey && !w.IsWhere).Select(s => $"{identifier.Insert(1, EntityInfo.Alias)}.{identifier.Insert(1, s.ColumnName)} = {identifier.Insert(1, JoinUpdateAlias)}.{identifier.Insert(1, s.ColumnName)}");
+                var setValues = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsPrimaryKey && !w.IsWhere && !w.IsNavigate).Select(s => $"{identifier.Insert(1, EntityInfo.Alias)}.{identifier.Insert(1, s.ColumnName)} = {identifier.Insert(1, JoinUpdateAlias)}.{identifier.Insert(1, s.ColumnName)}");
 
                 SetString = string.Join(",", setValues);
 
