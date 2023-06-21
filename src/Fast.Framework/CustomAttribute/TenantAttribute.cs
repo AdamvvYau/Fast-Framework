@@ -12,7 +12,7 @@ namespace Fast.Framework.CustomAttribute
     {
 
         /// <summary>
-        /// 数据库ID
+        /// 租户ID
         /// </summary>
         public string TenantId { get; set; }
 
