@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Fast.Framework.CustomAttribute;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -30,8 +31,8 @@ namespace Fast.Framework.Test.Models
         /// <summary>
         /// 产品
         /// </summary>
-        [NotMapped]
-        public List<Product> Products { get; set; }
+        [Navigate(MainName = nameof(CategoryId), ChildName = nameof(Product.CategoryId))]
+        public IEnumerable<Product> Products { get; set; }
 
     }
 }

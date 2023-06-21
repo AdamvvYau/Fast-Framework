@@ -9,8 +9,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
-using Fast.Framework.Abstract;
-using Fast.Framework.Factory;
 using Fast.Framework.Enum;
 
 namespace Fast.Framework.Extensions
@@ -30,7 +28,7 @@ namespace Fast.Framework.Extensions
         /// <param name="include">包括</param>
         /// <param name="expression">表达式</param>
         /// <returns></returns>
-        public static IInclude<T, TProperty> ThenInclude<T, TPreviousProperty, TProperty>(this IInclude<T, List<TPreviousProperty>> include, Expression<Func<TPreviousProperty, TProperty>> expression) where TProperty : class
+        public static IInclude<T, TProperty> ThenInclude<T, TPreviousProperty, TProperty>(this IInclude<T, IEnumerable<TPreviousProperty>> include, Expression<Func<TPreviousProperty, TProperty>> expression) where TProperty : class
         {
             var result = expression.ResolveSql(new ResolveSqlOptions()
             {
@@ -40,6 +38,8 @@ namespace Fast.Framework.Extensions
                 IgnoreIdentifier = true,
                 IgnoreColumnAttribute = true
             });
+
+            var navigate = (include.IncludeInfo.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.PropertyInfo.Name == result.SqlString)?.Navigate) ?? throw new Exception($"{result.SqlString}未找到导航信息.");
 
             var propertyType = typeof(TProperty);
 
@@ -54,122 +54,36 @@ namespace Fast.Framework.Extensions
                 type = type.GenericTypeArguments[0];
             }
 
-            include.IncludeInfo.QueryBuilder.IsInclude = true;
-
             var queryBuilder = include.QueryBuilder.Clone();
-            queryBuilder.EntityInfo = include.QueryBuilder.IncludeInfos.Last().EntityDbMapping.Clone();
+
+            include.IncludeInfo.QueryBuilder.IsInclude = true;//标记为Include
+
+            queryBuilder.EntityInfo = include.QueryBuilder.IncludeInfos.Last().EntityInfo.Clone();
             queryBuilder.EntityInfo.Alias = "Include_A";
 
-            var includeInfo = new IncludeInfo();
-            includeInfo.EntityDbMapping = type.GetEntityInfo();
-            includeInfo.EntityDbMapping.Alias = "Include_B";
+            var includeInfo = new IncludeInfo
+            {
+                EntityInfo = type.GetEntityInfo()
+            };
 
+            includeInfo.EntityInfo.Alias = "Include_B";
             includeInfo.PropertyName = result.SqlString;
             includeInfo.PropertyType = propertyType;
             includeInfo.Type = type;
             includeInfo.QueryBuilder = queryBuilder;
 
+            if (!string.IsNullOrWhiteSpace(navigate.MainName))
+            {
+                includeInfo.MainWhereColumn = includeInfo.QueryBuilder.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.PropertyInfo.Name == navigate.MainName) ?? throw new Exception($"导航名称:{navigate.MainName}不存在.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(navigate.ChildName))
+            {
+                includeInfo.ChildWhereColumn = includeInfo.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.PropertyInfo.Name == navigate.ChildName) ?? throw new Exception($"导航名称:{navigate.ChildName}不存在.");
+            }
+
             include.IncludeInfo.QueryBuilder.IncludeInfos.Add(includeInfo);
-
             return new IncludeProvider<T, TProperty>(include.Ado, include.QueryBuilder, includeInfo);
-        }
-
-        /// <summary>
-        /// 条件列
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="whereColumn">条件列</param>
-        /// <returns></returns>
-        public static IInclude<T, TProperty> WhereColumn<T, TProperty>(this IInclude<T, TProperty> include, string whereColumn) where TProperty : class
-        {
-            include.IncludeInfo.WhereColumn = include.QueryBuilder.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.ColumnName == whereColumn);
-            return include;
-        }
-
-        /// <summary>
-        /// 条件
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="expression">表达式</param>
-        /// <returns></returns>
-        public static IInclude<T, TProperty> Where<T, TProperty>(this IInclude<T, TProperty> include, Expression<Func<T, TProperty, bool>> expression) where TProperty : class
-        {
-            var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-
-            queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = include.Ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.Where,
-                    DbParameterStartIndex = queryBuilder.DbParameters.Count + 1
-                },
-                Expression = expression
-            });
-            return include;
-        }
-
-        /// <summary>
-        /// 排序
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="orderFields">排序字段</param>
-        /// <param name="orderByType">排序类型</param>
-        /// <returns></returns>
-        public static IInclude<T, TProperty> OrderBy<T, TProperty>(this IInclude<T, TProperty> include, List<string> orderFields, OrderByType orderByType = OrderByType.ASC) where TProperty : class
-        {
-            var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-
-            queryBuilder.OrderBy.Add($"{string.Join(",", orderFields)} {orderByType}");
-            return include;
-        }
-
-        /// <summary>
-        /// 排序
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="expression">表达式</param>
-        /// <param name="orderByType">排序类型</param>
-        /// <returns></returns>
-        public static IInclude<T, TProperty> OrderBy<T, TProperty>(this IInclude<T, TProperty> include, Expression<Func<T, TProperty, object>> expression, OrderByType orderByType = OrderByType.ASC) where TProperty : class
-        {
-            var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-
-            queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = include.Ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.OrderBy
-                },
-                Expression = expression,
-                Addedalue = orderByType
-            });
-
-            return include;
-        }
-
-        /// <summary>
-        /// 选择
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="columns">列</param>
-        /// <returns></returns>
-        public static IInclude<T, TProperty> Select<T, TProperty>(this IInclude<T, TProperty> include, string columns) where TProperty : class
-        {
-            var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-            queryBuilder.SelectValue = columns;
-            return include;
         }
 
         /// <summary>
@@ -196,128 +110,5 @@ namespace Fast.Framework.Extensions
 
             return include;
         }
-
-        /// <summary>
-        /// 列表条件列
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="whereColumn">条件列</param>
-        /// <returns></returns>
-        public static IInclude<T, List<TProperty>> ListWhereColumn<T, TProperty>(this IInclude<T, List<TProperty>> include, string whereColumn) where TProperty : class
-        {
-            include.IncludeInfo.WhereColumn = include.QueryBuilder.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.ColumnName == whereColumn);
-            return include;
-        }
-
-        /// <summary>
-        /// 列表条件
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="expression">表达式</param>
-        /// <returns></returns>
-        public static IInclude<T, List<TProperty>> ListWhere<T, TProperty>(this IInclude<T, List<TProperty>> include, Expression<Func<T, TProperty, bool>> expression) where TProperty : class
-        {
-            var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-
-            queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = include.Ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.Where,
-                    DbParameterStartIndex = queryBuilder.DbParameters.Count + 1
-                },
-                Expression = expression
-            });
-            return include;
-        }
-
-        /// <summary>
-        /// 列表排序
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="orderFields">排序字段</param>
-        /// <param name="orderByType">排序类型</param>
-        /// <returns></returns>
-        public static IInclude<T, List<TProperty>> ListOrderBy<T, TProperty>(this IInclude<T, List<TProperty>> include, List<string> orderFields, OrderByType orderByType = OrderByType.ASC) where TProperty : class
-        {
-            var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-
-            queryBuilder.OrderBy.Add($"{string.Join(",", orderFields)} {orderByType}");
-            return include;
-        }
-
-        /// <summary>
-        /// 列表排序
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="expression">表达式</param>
-        /// <param name="orderByType">排序类型</param>
-        /// <returns></returns>
-        public static IInclude<T, List<TProperty>> ListOrderBy<T, TProperty>(this IInclude<T, List<TProperty>> include, Expression<Func<T, TProperty, object>> expression, OrderByType orderByType = OrderByType.ASC) where TProperty : class
-        {
-            var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-
-            queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = include.Ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.OrderBy
-                },
-                Expression = expression,
-                Addedalue = orderByType
-            });
-            return include;
-        }
-
-        /// <summary>
-        /// 列表选择
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="columns">列</param>
-        /// <returns></returns>
-        public static IInclude<T, List<TProperty>> ListSelect<T, TProperty>(this IInclude<T, List<TProperty>> include, string columns) where TProperty : class
-        {
-            var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-            queryBuilder.SelectValue = columns;
-            return include;
-        }
-
-        /// <summary>
-        /// 列表选择
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <typeparam name="TProperty"></typeparam>
-        /// <param name="include">包括</param>
-        /// <param name="expression">表达式</param>
-        /// <returns></returns>
-        public static IInclude<T, List<TProperty>> ListSelect<T, TProperty>(this IInclude<T, List<TProperty>> include, Expression<Func<T, TProperty, object>> expression) where TProperty : class
-        {
-            var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
-
-            queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
-            {
-                ResolveSqlOptions = new ResolveSqlOptions()
-                {
-                    DbType = include.Ado.DbOptions.DbType,
-                    ResolveSqlType = ResolveSqlType.NewAs
-                },
-                Expression = expression
-            });
-
-            return include;
-        }
-
     }
 }

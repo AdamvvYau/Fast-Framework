@@ -154,6 +154,13 @@ namespace Fast.Framework.Test
                 //var subQuery2 = db.Query<Product>();
                 //var sql2 = db.Query(subQuery2).OrderBy(o => o.ProductCode).ToSqlString();
                 //Console.WriteLine(sql2);
+
+                //// 导航查询
+                //var data = db.Query<Category>()
+                //    .Include(i => i.Products)
+                //    .ThenInclude(i => i.Category)
+                //    .ToList();
+
             }
             catch (Exception ex)
             {

@@ -30,35 +30,24 @@ namespace Fast.Framework.Models
         public string PropertyName { get; set; }
 
         /// <summary>
-        /// 实体数据库映射
+        /// 实体信息
         /// </summary>
-        public EntityInfo EntityDbMapping { get; set; }
+        public EntityInfo EntityInfo { get; set; }
 
         /// <summary>
-        /// 条件列
+        /// 主条件列
         /// </summary>
-        public ColumnInfo WhereColumn { get; set; }
+        public ColumnInfo MainWhereColumn { get; set; }
+
+        /// <summary>
+        /// 子条件列
+        /// </summary>
+        public ColumnInfo ChildWhereColumn { get; set; }
 
         /// <summary>
         /// 查询建造
         /// </summary>
         public QueryBuilder QueryBuilder { get; set; }
-
-        /// <summary>
-        /// 克隆
-        /// </summary>
-        /// <returns></returns>
-        public virtual IncludeInfo Clone()
-        {
-            var includeInfo = new IncludeInfo();
-            includeInfo.PropertyType = this.PropertyType;
-            includeInfo.Type = this.Type;
-            includeInfo.PropertyName = this.PropertyName;
-            includeInfo.EntityDbMapping = this.EntityDbMapping.Clone();
-            includeInfo.WhereColumn = this.WhereColumn.Clone();
-            includeInfo.QueryBuilder = this.QueryBuilder.Clone();
-            return includeInfo;
-        }
 
     }
 }

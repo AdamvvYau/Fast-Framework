@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Fast.Framework.CustomAttribute;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -95,6 +96,16 @@ namespace Fast.Framework.Models
         public bool IsVersion { get; set; }
 
         /// <summary>
+        /// 是否导航
+        /// </summary>
+        public bool IsNavigate { get; set; }
+
+        /// <summary>
+        /// 导航属性
+        /// </summary>
+        public NavigateAttribute Navigate { get; set; }
+
+        /// <summary>
         /// 克隆
         /// </summary>
         /// <returns></returns>
@@ -117,7 +128,9 @@ namespace Fast.Framework.Models
                 IsNotMapped = this.IsNotMapped,
                 IsNullable = this.IsNullable,
                 IsWhere = this.IsWhere,
-                IsVersion = this.IsVersion
+                IsVersion = this.IsVersion,
+                IsNavigate = this.IsNavigate,
+                Navigate = this.Navigate
             };
         }
     }

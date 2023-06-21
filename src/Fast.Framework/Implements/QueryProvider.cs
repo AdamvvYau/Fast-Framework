@@ -255,12 +255,14 @@ namespace Fast.Framework
                 IgnoreColumnAttribute = true
             });
 
-            var propertyType = typeof(TProperty);
-
-            if (QueryBuilder.IncludeInfos.Any(a => a.PropertyType.FullName == propertyType.FullName))
+            if (QueryBuilder.IncludeInfos.Any(a => a.PropertyName == result.SqlString))
             {
                 throw new Exception($"属性名称:{result.SqlString} 不能重复使用Include方法.");
             }
+
+            var navigate = (QueryBuilder.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.PropertyInfo.Name == result.SqlString)?.Navigate) ?? throw new Exception($"{result.SqlString}未找到导航信息.");
+
+            var propertyType = typeof(TProperty);
 
             var type = propertyType;
 
@@ -272,23 +274,37 @@ namespace Fast.Framework
             {
                 type = type.GenericTypeArguments[0];
             }
-            QueryBuilder.IsInclude = true;
 
-            var queryBuilder = BuilderFactory.CreateQueryBuilder(ado.DbOptions.DbType);
+            var queryBuilder = QueryBuilder.Clone();
+
+            QueryBuilder.IsInclude = true;//标记为Include
+
             queryBuilder.EntityInfo = this.QueryBuilder.EntityInfo.Clone();
+
             queryBuilder.EntityInfo.Alias = "Include_A";
 
-            var includeInfo = new IncludeInfo();
-            includeInfo.EntityDbMapping = type.GetEntityInfo();
-            includeInfo.EntityDbMapping.Alias = "Include_B";
+            var includeInfo = new IncludeInfo
+            {
+                EntityInfo = type.GetEntityInfo()
+            };
 
+            includeInfo.EntityInfo.Alias = "Include_B";
             includeInfo.PropertyName = result.SqlString;
             includeInfo.PropertyType = propertyType;
             includeInfo.Type = type;
             includeInfo.QueryBuilder = queryBuilder;
 
-            QueryBuilder.IncludeInfos.Add(includeInfo);
+            if (!string.IsNullOrWhiteSpace(navigate.MainName))
+            {
+                includeInfo.MainWhereColumn = QueryBuilder.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.PropertyInfo.Name == navigate.MainName) ?? throw new Exception($"导航名称:{navigate.MainName}不存在.");
+            }
 
+            if (!string.IsNullOrWhiteSpace(navigate.ChildName))
+            {
+                includeInfo.ChildWhereColumn = includeInfo.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.PropertyInfo.Name == navigate.ChildName) ?? throw new Exception($"导航名称:{navigate.ChildName}不存在.");
+            }
+
+            QueryBuilder.IncludeInfos.Add(includeInfo);
             return new IncludeProvider<T, TProperty>(ado, QueryBuilder, includeInfo);
         }
 

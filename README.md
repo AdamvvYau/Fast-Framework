@@ -550,6 +550,41 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
               //执行查询调用Toxx方法
   ```
   
+- 导航查询 (支持无限层级)
+
+  ```c#
+                  /// <summary>
+                  /// 类别
+                  /// </summary>
+                  public class Category
+                  {
+                      /// <summary>
+                      /// 类别ID
+                      /// </summary>
+                      [Key]
+                      public int CategoryId { get; set; }
+                  
+                      /// <summary>
+                      /// 类别名称
+                      /// </summary>
+                      public string CategoryName { get; set; }
+                  
+                      /// <summary>
+                      /// 产品 Navigate MainName和ChildName 可不显示指定，会自动查找主键匹配或ID为结尾的属性
+                      /// </summary>
+                      [Navigate(MainName = nameof(CategoryId), ChildName = nameof(Product.CategoryId))]
+                      public IEnumerable<Product> Products { get; set; }
+                  
+                  }
+  
+                  var data = db.Query<Category>()
+                      .Include(i => i.Products)
+                      .ThenInclude(i => i.Category)
+                      .ToList();
+  ```
+
+  
+
 - 查询并插入  仅支持同实例的数据库 跨库 个人还是建议 用事务分开写查询和插入
 
   ```c#

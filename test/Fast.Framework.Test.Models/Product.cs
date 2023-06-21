@@ -111,6 +111,12 @@ namespace Fast.Framework.Test.Models
         /// </summary>
         [OptLock]
         public string Custom12 { get; set; }
+
+        /// <summary>
+        /// 类别
+        /// </summary>
+        [Navigate(MainName = "CategoryId", ChildName = "CategoryId")]
+        public Category Category { get; set; }
     }
 }
 

@@ -90,6 +90,14 @@ namespace Fast.Framework.Extensions
             columnInfo.IsPrimaryKey = memberInfo.IsDefined(typeof(KeyAttribute), false);
             columnInfo.IsVersion = memberInfo.IsDefined(typeof(OptLockAttribute), false);
 
+            var navigateAttribute = memberInfo.GetCustomAttribute<NavigateAttribute>(false);
+            columnInfo.IsNavigate = navigateAttribute != null;
+
+            if (columnInfo.IsNavigate)
+            {
+                columnInfo.Navigate = navigateAttribute;
+            }
+
             var columnAttribute = memberInfo.GetCustomAttribute<ColumnAttribute>(false);
             if (columnAttribute == null)
             {

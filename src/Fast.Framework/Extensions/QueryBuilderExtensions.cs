@@ -26,9 +26,6 @@ namespace Fast.Framework.Extensions
 
         private static readonly MethodInfo ofTypeMethod;
 
-        private static readonly MethodInfo ofObjTypeMethod;
-        private static readonly MethodInfo ofObjTypeGenericMethod;
-
         private static readonly MethodInfo toArrayMethod;
         private static readonly MethodInfo toListMethod;
 
@@ -46,9 +43,6 @@ namespace Fast.Framework.Extensions
 
             ofTypeMethod = typeof(Enumerable).GetMethod("OfType");
 
-            ofObjTypeMethod = typeof(Enumerable).GetMethod("OfType");
-            ofObjTypeGenericMethod = ofObjTypeMethod.MakeGenericMethod(typeof(object));
-
             toArrayMethod = typeof(Enumerable).GetMethod("ToArray");
 
             toListMethod = typeof(Enumerable).GetMethod("ToList");
@@ -58,18 +52,18 @@ namespace Fast.Framework.Extensions
         }
 
         /// <summary>
-        /// 初始化
+        /// 包括初始化
         /// </summary>
         /// <param name="dbType">数据库类型</param>
         /// <param name="includeInfo">包括信息</param>
         /// <param name="isMultipleResult">是否多结果</param>
-        private static void Init(Enum.DbType dbType, IncludeInfo includeInfo, bool isMultipleResult)
+        private static void IncludeInit(Enum.DbType dbType, IncludeInfo includeInfo, bool isMultipleResult)
         {
             var identifier = dbType.GetIdentifier();
             var symbol = dbType.GetSymbol();
 
-            //条件列
-            if (includeInfo.WhereColumn == null)
+            //主条件列
+            if (includeInfo.MainWhereColumn == null)
             {
                 var whereColumn = includeInfo.QueryBuilder.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.IsPrimaryKey);
                 if (whereColumn == null)
@@ -77,36 +71,39 @@ namespace Fast.Framework.Extensions
                     whereColumn = includeInfo.QueryBuilder.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.ColumnName.ToUpper().EndsWith("ID"));
                     if (whereColumn == null)
                     {
-                        throw new Exception("未查找到主键或ID结尾的属性.");
+                        throw new Exception($"类型{includeInfo.QueryBuilder.EntityInfo.EntityType.FullName},未查找到主键或ID结尾的属性.");
                     }
                 }
-                includeInfo.WhereColumn = whereColumn;
+                includeInfo.MainWhereColumn = whereColumn;
             }
 
-            //排序列
-            if (includeInfo.QueryBuilder.OrderBy.Count == 0)
+            //子条件列
+            if (includeInfo.ChildWhereColumn == null)
             {
-                var orderByColumn = includeInfo.EntityDbMapping.ColumnsInfos.FirstOrDefault(f => f.IsPrimaryKey);
-                if (orderByColumn == null)
+                var whereColumn = includeInfo.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.PropertyInfo.Name == includeInfo.MainWhereColumn.PropertyInfo.Name);
+                if (whereColumn == null)
                 {
-                    orderByColumn = includeInfo.EntityDbMapping.ColumnsInfos.FirstOrDefault(f => f.ColumnName.ToUpper().EndsWith("ID"));
+                    whereColumn = includeInfo.EntityInfo.ColumnsInfos.FirstOrDefault(f => f.ColumnName.ToUpper().EndsWith("ID"));
+                    if (whereColumn == null)
+                    {
+                        throw new Exception($"类型{includeInfo.EntityInfo.EntityType.FullName},未查找到主键或ID结尾的属性.");
+                    }
                 }
-                if (orderByColumn != null)
-                {
-                    includeInfo.QueryBuilder.OrderBy.Add($"{identifier.Insert(1, includeInfo.EntityDbMapping.Alias)}.{identifier.Insert(1, orderByColumn.ColumnName)}");
-                }
+                includeInfo.ChildWhereColumn = whereColumn;
             }
 
             if (!isMultipleResult)
             {
-                includeInfo.QueryBuilder.Where.Add($"{identifier.Insert(1, includeInfo.EntityDbMapping.Alias)}.{identifier.Insert(1, includeInfo.WhereColumn.ColumnName)} = {symbol}{includeInfo.WhereColumn.ColumnName}");
+                includeInfo.QueryBuilder.Where.Add($"{identifier.Insert(1, includeInfo.EntityInfo.Alias)}.{identifier.Insert(1, includeInfo.MainWhereColumn.ColumnName)} = {symbol}{includeInfo.ChildWhereColumn.ColumnName}");
             }
 
-            var joinInfo = new JoinInfo();
-            joinInfo.IsInclude = true;
-            joinInfo.JoinType = JoinType.Inner;
-            joinInfo.EntityInfo = includeInfo.EntityDbMapping;
-            joinInfo.Where = $"{identifier.Insert(1, includeInfo.QueryBuilder.EntityInfo.Alias)}.{identifier.Insert(1, includeInfo.WhereColumn.ColumnName)} = {identifier.Insert(1, includeInfo.EntityDbMapping.Alias)}.{identifier.Insert(1, includeInfo.WhereColumn.ColumnName)}";
+            var joinInfo = new JoinInfo
+            {
+                IsInclude = true,
+                JoinType = JoinType.Inner,
+                EntityInfo = includeInfo.EntityInfo,
+                Where = $"{identifier.Insert(1, includeInfo.QueryBuilder.EntityInfo.Alias)}.{identifier.Insert(1, includeInfo.MainWhereColumn.ColumnName)} = {identifier.Insert(1, includeInfo.EntityInfo.Alias)}.{identifier.Insert(1, includeInfo.ChildWhereColumn.ColumnName)}"
+            };
 
             includeInfo.QueryBuilder.Join.Add(joinInfo);
         }
@@ -120,7 +117,7 @@ namespace Fast.Framework.Extensions
         /// <returns></returns>
         public static void IncludeDataBind(this QueryBuilder queryBuilder, IAdo ado, object obj)
         {
-            if (queryBuilder.IsInclude && queryBuilder.IsInclude && obj != null)
+            if (queryBuilder.IsInclude && obj != null)
             {
                 var type = obj.GetType();
 
@@ -139,14 +136,7 @@ namespace Fast.Framework.Extensions
 
                 foreach (var includeInfo in queryBuilder.IncludeInfos)
                 {
-
-                    includeInfo.QueryBuilder.IsDistinct = queryBuilder.IsDistinct;
-                    includeInfo.QueryBuilder.IsPage = queryBuilder.IsPage;
-                    includeInfo.QueryBuilder.Page = queryBuilder.Page;
-                    includeInfo.QueryBuilder.PageSize = queryBuilder.PageSize;
-                    includeInfo.QueryBuilder.IsFirst = queryBuilder.IsFirst;
-
-                    Init(ado.DbOptions.DbType, includeInfo, isMultipleResult);
+                    IncludeInit(ado.DbOptions.DbType, includeInfo, isMultipleResult);
 
                     var propertyInfo = type.GetProperty(includeInfo.PropertyName);
 
@@ -154,72 +144,61 @@ namespace Fast.Framework.Extensions
 
                     if (!isMultipleResult)
                     {
-                        var parameterValue = includeInfo.WhereColumn.PropertyInfo.GetValue(obj);
-                        includeInfo.QueryBuilder.DbParameters.Add(new FastParameter(includeInfo.WhereColumn.ColumnName, parameterValue));
+                        var parameterValue = includeInfo.MainWhereColumn.PropertyInfo.GetValue(obj);
+                        includeInfo.QueryBuilder.DbParameters.Add(new FastParameter(includeInfo.MainWhereColumn.ColumnName, parameterValue));
                     }
 
                     var sql = includeInfo.QueryBuilder.ToSqlString();
                     var reader = ado.ExecuteReader(CommandType.Text, sql, ado.ConvertParameter(includeInfo.QueryBuilder.DbParameters));
 
                     var listBuildGenericMethod = listBuildMethod.MakeGenericMethod(includeInfo.Type);
-
-                    var ofTypeGenericMethod = ofTypeMethod.MakeGenericMethod(includeInfo.Type);
-
                     var toArrayGenericMethod = toArrayMethod.MakeGenericMethod(includeInfo.Type);
 
+                    var ofTypeGenericMethod = ofTypeMethod.MakeGenericMethod(includeInfo.Type);
                     var toListGenericMethod = toListMethod.MakeGenericMethod(includeInfo.Type);
 
                     if (isMultipleResult)
                     {
                         data = listBuildGenericMethod.Invoke(null, new object[] { reader });
 
-                        var list = ofObjTypeGenericMethod.Invoke(null, new object[] { data });
+                        var list = toObjListGenericMethod.Invoke(null, new object[] { data }) as IList<object>;
 
-                        list = toObjListGenericMethod.Invoke(null, new object[] { data });
-
-                        var objList = list as List<object>;
-
-                        if (objList.Any())
+                        if (list.Count > 0)
                         {
-                            var whereColumnA = objList.FirstOrDefault()?.GetType().GetProperty(includeInfo.WhereColumn.PropertyInfo.Name);
+                            var childWhereColumn = list.FirstOrDefault()?.GetType().GetProperty(includeInfo.ChildWhereColumn.PropertyInfo.Name);
 
-                            if (whereColumnA != null)
+                            foreach (var item in obj as IList)
                             {
-                                foreach (var item in obj as IList)
+                                var parameterValue = includeInfo.MainWhereColumn.PropertyInfo.GetValue(item);
+
+                                object value = null;
+
+                                if (includeInfo.PropertyType.IsArray || includeInfo.PropertyType.IsGenericType)
                                 {
-                                    var parameterValue = includeInfo.WhereColumn.PropertyInfo.GetValue(item);
+                                    value = list.Where(w => Convert.ToString(childWhereColumn.GetValue(w)) == Convert.ToString(parameterValue));
 
-                                    object value = null;
+                                    value = ofTypeGenericMethod.Invoke(null, new object[] { value });
 
-                                    if (includeInfo.PropertyType.IsArray || includeInfo.PropertyType.IsGenericType)
+                                    if (includeInfo.PropertyType.IsArray)
                                     {
-                                        value = objList.Where(w => Convert.ToString(whereColumnA.GetValue(w)) == Convert.ToString(parameterValue)).ToList();
-
-                                        value = ofTypeGenericMethod.Invoke(null, new object[] { value });
-
-                                        if (includeInfo.PropertyType.IsArray)
-                                        {
-                                            value = toArrayGenericMethod.Invoke(null, new object[] { value });
-                                        }
-                                        else if (includeInfo.PropertyType.IsGenericType)
-                                        {
-                                            value = toListGenericMethod.Invoke(null, new object[] { value });
-                                        }
+                                        value = toArrayGenericMethod.Invoke(null, new object[] { value });
                                     }
-                                    else
+                                    else if (includeInfo.PropertyType.IsGenericType)
                                     {
-                                        value = objList.FirstOrDefault(w => Convert.ToString(whereColumnA.GetValue(w)) == Convert.ToString(parameterValue)).ChangeType(includeInfo.Type);
+                                        value = toListGenericMethod.Invoke(null, new object[] { value });
                                     }
-
-                                    propertyInfo.SetValue(item, value);
                                 }
+                                else
+                                {
+                                    value = list.FirstOrDefault(w => Convert.ToString(childWhereColumn.GetValue(w)) == Convert.ToString(parameterValue));
+                                }
+
+                                propertyInfo.SetValue(item, value);
                             }
                         }
                     }
                     else
                     {
-                        var fristBuildGenericMethod = firstBuildMethod.MakeGenericMethod(includeInfo.Type);
-
                         if (includeInfo.PropertyType.IsArray || includeInfo.PropertyType.IsGenericType)
                         {
                             data = listBuildGenericMethod.Invoke(null, new object[] { reader });
@@ -231,20 +210,14 @@ namespace Fast.Framework.Extensions
                         }
                         else
                         {
+                            var fristBuildGenericMethod = firstBuildMethod.MakeGenericMethod(includeInfo.Type);
                             data = fristBuildGenericMethod.Invoke(null, new object[] { reader });
                         }
                         propertyInfo.SetValue(obj, data);
                     }
 
-                    if (includeInfo.QueryBuilder.IncludeInfos.Count > 0)
-                    {
-                        includeInfo.QueryBuilder.IncludeDataBind(ado, data);
-                    }
+                    includeInfo.QueryBuilder.IncludeDataBind(ado, data);//递归
                 }
-
-                //初始化
-                queryBuilder.IsInclude = false;
-                queryBuilder.IncludeInfos.Clear();
             }
         }
 
@@ -257,7 +230,6 @@ namespace Fast.Framework.Extensions
         {
             if (obj != null)
             {
-                var entityInfo = typeof(T).GetEntityInfo();
                 foreach (var item in queryBuilder.SetMemberInfos)
                 {
                     if (item.Value != null)

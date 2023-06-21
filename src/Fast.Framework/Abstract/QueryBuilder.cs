@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Fast.Framework.Enum;
@@ -474,7 +473,7 @@ namespace Fast.Framework.Abstract
             //初始化列
             if (string.IsNullOrWhiteSpace(SelectValue))
             {
-                var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped);
+                var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsNavigate);
                 var columnNames = columnInfos.Select(s => s.ColumnName).ToList();
                 var selectValues = columnInfos.Select(s => $"{(Join.Count == 0 && !IsSubQuery && !IncludeSubQuery ? "" : $"{EntityInfo.Alias}.")}{identifier.Insert(1, s.ColumnName)}").ToList();
                 if (Join.Count > 0)
@@ -482,7 +481,7 @@ namespace Fast.Framework.Abstract
                     Join.ForEach(i =>
                     {
                         //层级过滤已存在的列
-                        var columnInfos = i.EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped);
+                        var columnInfos = i.EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsNavigate);
                         var filterColumnInfos = columnInfos.Where(w => !columnNames.Exists(e => e == w.ColumnName));
                         selectValues.AddRange(filterColumnInfos.Select(s => $"{$"{i.EntityInfo.Alias}."}{identifier.Insert(1, s.ColumnName)}"));
                         columnNames.AddRange(filterColumnInfos.Select(s => s.ColumnName));
@@ -558,8 +557,6 @@ namespace Fast.Framework.Abstract
         {
             this.ResolveExpressions();
             var queryBuilder = BuilderFactory.CreateQueryBuilder(this.DbType);
-            queryBuilder.IsInclude = this.IsInclude;
-            queryBuilder.IncludeInfos.AddRange(this.IncludeInfos.Select(s => s.Clone()));
             queryBuilder.SetMemberInfos.AddRange(this.SetMemberInfos);
             queryBuilder.EntityInfo = this.EntityInfo.Clone();
             queryBuilder.IsFromQuery = this.IsFromQuery;
