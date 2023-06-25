@@ -175,8 +175,8 @@ namespace Fast.Framework.Utils
             }
             var rsa = RSA.Create();
             rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
-            var data = rsa.Encrypt(Encoding.UTF8.GetBytes(str), RSAEncryptionPadding.Pkcs1);
-            return Convert.ToBase64String(data);
+            var encryptBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(str), RSAEncryptionPadding.Pkcs1);
+            return Convert.ToBase64String(encryptBytes);
         }
 
         /// <summary>
@@ -197,8 +197,74 @@ namespace Fast.Framework.Utils
             }
             var rsa = RSA.Create();
             rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
-            var data = rsa.Decrypt(Convert.FromBase64String(str), RSAEncryptionPadding.Pkcs1);
-            return Encoding.UTF8.GetString(data);
+            var decryptBytes = rsa.Decrypt(Convert.FromBase64String(str), RSAEncryptionPadding.Pkcs1);
+            return Encoding.UTF8.GetString(decryptBytes);
+        }
+
+        /// <summary>
+        /// RAS 拆分加密
+        /// </summary>
+        /// <param name="str">字符串</param>
+        /// <param name="publicKey">公钥</param>
+        /// <returns></returns>
+        public static string RSASplitEncrypt(string str, string publicKey)
+        {
+            if (str == null)
+            {
+                throw new ArgumentNullException(nameof(str));
+            }
+            if (string.IsNullOrWhiteSpace(publicKey))
+            {
+                throw new ArgumentNullException(nameof(publicKey));
+            }
+            var rsa = RSA.Create();
+            rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
+
+            var bytes = Encoding.UTF8.GetBytes(str);
+            var batchSize = (rsa.KeySize / 8) - 11;//批次大小
+
+            using var memoryStream = new MemoryStream();
+
+            for (int i = 0; i < bytes.LongLength; i += batchSize)
+            {
+                var batchArray = bytes.Skip(i).Take(batchSize).ToArray();
+                var encryptBytes = rsa.Encrypt(batchArray, RSAEncryptionPadding.Pkcs1);
+                memoryStream.Write(encryptBytes);
+            }
+            return Convert.ToBase64String(memoryStream.ToArray());
+        }
+
+        /// <summary>
+        /// RSA 拆分解密
+        /// </summary>
+        /// <param name="str">字符串</param>
+        /// <param name="privateKey">私钥</param>
+        /// <returns></returns>
+        public static string RSASplitDecrypt(string str, string privateKey)
+        {
+            if (str == null)
+            {
+                throw new ArgumentNullException(nameof(str));
+            }
+            if (string.IsNullOrWhiteSpace(privateKey))
+            {
+                throw new ArgumentNullException(nameof(privateKey));
+            }
+            var rsa = RSA.Create();
+            rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
+
+            var bytes = Convert.FromBase64String(str);
+            var batchSize = (rsa.KeySize / 8);
+
+            using var memoryStream = new MemoryStream();
+
+            for (int i = 0; i < bytes.LongLength; i += batchSize)
+            {
+                var batchArray = bytes.Skip(i).Take(batchSize).ToArray();
+                var encryptBytes = rsa.Decrypt(batchArray, RSAEncryptionPadding.Pkcs1);
+                memoryStream.Write(encryptBytes);
+            }
+            return Encoding.UTF8.GetString(memoryStream.ToArray());
         }
     }
 }
