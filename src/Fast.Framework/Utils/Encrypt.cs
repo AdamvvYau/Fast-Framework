@@ -34,22 +34,15 @@ namespace Fast.Framework.Utils
             {
                 throw new ArgumentException("key length 8");
             }
-            try
-            {
-                byte[] rgbKey = Encoding.UTF8.GetBytes(key.Substring(0, 8));
-                byte[] rgbIV = rgbKey;
-                byte[] strByte = Encoding.UTF8.GetBytes(str);
-                DES provider = DES.Create();
-                MemoryStream memoryStream = new MemoryStream();
-                CryptoStream cryptoStream = new CryptoStream(memoryStream, provider.CreateEncryptor(rgbKey, rgbIV), CryptoStreamMode.Write);
-                cryptoStream.Write(strByte, 0, strByte.Length);
-                cryptoStream.FlushFinalBlock();
-                return Convert.ToBase64String(memoryStream.ToArray());
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("EncryptException:" + ex.Message);
-            }
+            var rgbKey = Encoding.UTF8.GetBytes(key.Substring(0, 8));
+            var rgbIV = rgbKey;
+            var strByte = Encoding.UTF8.GetBytes(str);
+            var provider = DES.Create();
+            var memoryStream = new MemoryStream();
+            var cryptoStream = new CryptoStream(memoryStream, provider.CreateEncryptor(rgbKey, rgbIV), CryptoStreamMode.Write);
+            cryptoStream.Write(strByte, 0, strByte.Length);
+            cryptoStream.FlushFinalBlock();
+            return Convert.ToBase64String(memoryStream.ToArray());
         }
 
         /// <summary>
@@ -72,22 +65,15 @@ namespace Fast.Framework.Utils
             {
                 throw new ArgumentException("key length 8");
             }
-            try
-            {
-                byte[] rgbKey = Encoding.UTF8.GetBytes(key.Substring(0, 8));
-                byte[] rgbIV = rgbKey;
-                byte[] strByte = Convert.FromBase64String(str);
-                DES provider = DES.Create();
-                MemoryStream memoryStream = new MemoryStream();
-                CryptoStream cryptoStream = new CryptoStream(memoryStream, provider.CreateDecryptor(rgbKey, rgbIV), CryptoStreamMode.Write);
-                cryptoStream.Write(strByte, 0, strByte.Length);
-                cryptoStream.FlushFinalBlock();
-                return Encoding.UTF8.GetString(memoryStream.ToArray());
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("DecryptException:" + ex.Message);
-            }
+            var rgbKey = Encoding.UTF8.GetBytes(key.Substring(0, 8));
+            var rgbIV = rgbKey;
+            var strByte = Convert.FromBase64String(str);
+            var provider = DES.Create();
+            var memoryStream = new MemoryStream();
+            var cryptoStream = new CryptoStream(memoryStream, provider.CreateDecryptor(rgbKey, rgbIV), CryptoStreamMode.Write);
+            cryptoStream.Write(strByte, 0, strByte.Length);
+            cryptoStream.FlushFinalBlock();
+            return Encoding.UTF8.GetString(memoryStream.ToArray());
         }
 
         /// <summary>
@@ -102,13 +88,10 @@ namespace Fast.Framework.Utils
             {
                 throw new ArgumentNullException(nameof(str));
             }
-            if (encoding == null)
-            {
-                encoding = Encoding.UTF8;
-            }
-            MD5 provider = MD5.Create();
-            byte[] data = provider.ComputeHash(encoding.GetBytes(str));
-            StringBuilder builder = new StringBuilder();
+            encoding ??= Encoding.UTF8;
+            var provider = MD5.Create();
+            var data = provider.ComputeHash(encoding.GetBytes(str));
+            var builder = new StringBuilder();
             for (int i = 0; i < data.Length; i++)
             {
                 builder.Append(data[i].ToString("x2"));
@@ -127,9 +110,9 @@ namespace Fast.Framework.Utils
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            MD5 provider = MD5.Create();
-            byte[] data = provider.ComputeHash(stream);
-            StringBuilder builder = new StringBuilder();
+            var provider = MD5.Create();
+            var data = provider.ComputeHash(stream);
+            var builder = new StringBuilder();
             for (int i = 0; i < data.Length; i++)
             {
                 builder.Append(data[i].ToString("x2"));
@@ -138,13 +121,13 @@ namespace Fast.Framework.Utils
         }
 
         /// <summary>
-        /// 创建RSA公钥和私钥
+        /// 创建RSA公钥(PKCS#1)和私钥(PKCS#1)
         /// </summary>
         /// <returns>公钥和密钥</returns>
         public static Dictionary<string, string> CreateRSAKey()
         {
-            RSA rsa = RSA.Create();
-            return new Dictionary<string, string> { ["public"] = rsa.ToXmlString(false), ["private"] = rsa.ToXmlString(true) };
+            var rsa = RSA.Create();
+            return new Dictionary<string, string> { ["public"] = Convert.ToBase64String(rsa.ExportRSAPublicKey()), ["private"] = Convert.ToBase64String(rsa.ExportRSAPrivateKey()) };
         }
 
         /// <summary>
@@ -153,21 +136,22 @@ namespace Fast.Framework.Utils
         /// <param name="keyValues">键值对</param>
         /// <param name="directory">目录</param>
         /// <param name="encoding">编码</param>
-        public static void WriteRSAKey(Dictionary<string, string> keyValues, string directory, Encoding encoding = null)
+        public static void WriteRSAKey(Dictionary<string, string> keyValues, string directory = "", Encoding encoding = null)
         {
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                directory = AppDomain.CurrentDomain.BaseDirectory;
+            }
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
-            if (encoding == null)
-            {
-                encoding = encoding ?? Encoding.UTF8;
-            }
-            using (StreamWriter sw = new StreamWriter(Path.Combine(directory, "Public.xml"), false, encoding))
+            encoding ??= Encoding.UTF8;
+            using (var sw = new StreamWriter(Path.Combine(directory, "PublicKey.pem"), false, encoding))
             {
                 sw.Write(keyValues["public"]);
             }
-            using (StreamWriter sw = new StreamWriter(Path.Combine(directory, "Private.xml"), false, encoding))
+            using (var sw = new StreamWriter(Path.Combine(directory, "PrivateKey.pem"), false, encoding))
             {
                 sw.Write(keyValues["private"]);
             }
@@ -189,17 +173,10 @@ namespace Fast.Framework.Utils
             {
                 throw new ArgumentNullException(nameof(publicKey));
             }
-            try
-            {
-                RSA rsa = RSA.Create();
-                rsa.FromXmlString(publicKey);
-                var data = rsa.Encrypt(Encoding.UTF8.GetBytes(str), RSAEncryptionPadding.OaepSHA256);
-                return Convert.ToBase64String(data);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("EncryptException:" + ex.Message);
-            }
+            var rsa = RSA.Create();
+            rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
+            var data = rsa.Encrypt(Encoding.UTF8.GetBytes(str), RSAEncryptionPadding.Pkcs1);
+            return Convert.ToBase64String(data);
         }
 
         /// <summary>
@@ -218,46 +195,10 @@ namespace Fast.Framework.Utils
             {
                 throw new ArgumentNullException(nameof(privateKey));
             }
-            try
-            {
-                RSA rsa = RSA.Create();
-                rsa.FromXmlString(privateKey);
-                var data = rsa.Decrypt(Convert.FromBase64String(str), RSAEncryptionPadding.OaepSHA256);
-                return Encoding.UTF8.GetString(data);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("DecryptException:" + ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// RSA签名
-        /// </summary>
-        /// <param name="data">数据</param>
-        /// <param name="privateKey">私钥</param>
-        /// <returns></returns>
-        public static string RSASign(string data, string privateKey)
-        {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-            if (string.IsNullOrWhiteSpace(privateKey))
-            {
-                throw new ArgumentNullException(nameof(privateKey));
-            }
-            try
-            {
-                RSA rsa = RSA.Create(2048);
-                rsa.FromXmlString(privateKey);
-                byte[] sign = rsa.SignData(Encoding.UTF8.GetBytes(data), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                return Convert.ToBase64String(sign);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("DecryptException:" + ex.Message);
-            }
+            var rsa = RSA.Create();
+            rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
+            var data = rsa.Decrypt(Convert.FromBase64String(str), RSAEncryptionPadding.Pkcs1);
+            return Encoding.UTF8.GetString(data);
         }
     }
 }
