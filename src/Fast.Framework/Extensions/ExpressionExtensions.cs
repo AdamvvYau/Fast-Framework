@@ -814,6 +814,14 @@ namespace Fast.Framework.Extensions
                 sqlBuilder.Append(" )");
             });
 
+            sqlserverFunc.Add("RowNumber", (resolve, methodCall, sqlBuilder) =>
+            {
+                sqlBuilder.Append("ROW_NUMBER() OVER (ORDER BY  ");
+                resolve.Visit(methodCall.Arguments[0]);
+                sqlBuilder.Append(" )");
+                resolve.Visit(methodCall.Object);
+            });
+
             sqlserverFunc.Add("Case", (resolve, methodCall, sqlBuilder) =>
             {
                 sqlBuilder.Append("CASE ");

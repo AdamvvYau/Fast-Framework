@@ -242,6 +242,18 @@ namespace Fast.Framework.Extensions
         }
 
         /// <summary>
+        /// 行ID
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="orderFields">排序字段</param>
+        /// <returns></returns>
+        public static int RowNumber<T>(T orderFields)
+        {
+            return default;
+        }
+
+        #region Case When
+        /// <summary>
         /// Case
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -323,6 +335,7 @@ namespace Fast.Framework.Extensions
         {
             return default;
         }
+        #endregion
 
         #endregion
     }
