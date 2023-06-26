@@ -175,50 +175,6 @@ namespace Fast.Framework.Utils
             }
             var rsa = RSA.Create();
             rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
-            var encryptBytes = rsa.Encrypt(Encoding.UTF8.GetBytes(str), RSAEncryptionPadding.Pkcs1);
-            return Convert.ToBase64String(encryptBytes);
-        }
-
-        /// <summary>
-        /// RSA 解密
-        /// </summary>
-        /// <param name="str">字符串</param>
-        /// <param name="privateKey">私钥</param>
-        /// <returns></returns>
-        public static string RSADecrypt(string str, string privateKey)
-        {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-            if (string.IsNullOrWhiteSpace(privateKey))
-            {
-                throw new ArgumentNullException(nameof(privateKey));
-            }
-            var rsa = RSA.Create();
-            rsa.ImportRSAPrivateKey(Convert.FromBase64String(privateKey), out _);
-            var decryptBytes = rsa.Decrypt(Convert.FromBase64String(str), RSAEncryptionPadding.Pkcs1);
-            return Encoding.UTF8.GetString(decryptBytes);
-        }
-
-        /// <summary>
-        /// RAS 拆分加密
-        /// </summary>
-        /// <param name="str">字符串</param>
-        /// <param name="publicKey">公钥</param>
-        /// <returns></returns>
-        public static string RSASplitEncrypt(string str, string publicKey)
-        {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-            if (string.IsNullOrWhiteSpace(publicKey))
-            {
-                throw new ArgumentNullException(nameof(publicKey));
-            }
-            var rsa = RSA.Create();
-            rsa.ImportRSAPublicKey(Convert.FromBase64String(publicKey), out _);
 
             var bytes = Encoding.UTF8.GetBytes(str);
             var batchSize = (rsa.KeySize / 8) - 11;//批次大小
@@ -235,12 +191,12 @@ namespace Fast.Framework.Utils
         }
 
         /// <summary>
-        /// RSA 拆分解密
+        /// RSA 解密
         /// </summary>
         /// <param name="str">字符串</param>
         /// <param name="privateKey">私钥</param>
         /// <returns></returns>
-        public static string RSASplitDecrypt(string str, string privateKey)
+        public static string RSADecrypt(string str, string privateKey)
         {
             if (str == null)
             {
