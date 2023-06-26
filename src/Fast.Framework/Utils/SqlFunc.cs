@@ -291,10 +291,11 @@ namespace Fast.Framework.Extensions
         /// Then
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
         /// <param name="source">源</param>
         /// <param name="value">值</param>
         /// <returns></returns>
-        public static CaseWarp<T> Then<T>(this CaseWarp<T> source, T value)
+        public static CaseWarp<T> Then<T, TValue>(this CaseWarp<T> source, TValue value)
         {
             return default;
         }
@@ -303,10 +304,11 @@ namespace Fast.Framework.Extensions
         /// Else
         /// </summary>
         /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
         /// <param name="source">源</param>
         /// <param name="value">值</param>
         /// <returns></returns>
-        public static CaseWarp<T> Else<T>(this CaseWarp<T> source, T value)
+        public static CaseWarp<T> Else<T, TValue>(this CaseWarp<T> source, TValue value)
         {
             return default;
         }
