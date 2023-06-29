@@ -18,7 +18,7 @@ namespace Fast.Framework.Models
         /// <summary>
         /// 值
         /// </summary>
-        public object Value { get; set; }
+        public Lazy<object> Value { get; set; }
 
         /// <summary>
         /// 索引

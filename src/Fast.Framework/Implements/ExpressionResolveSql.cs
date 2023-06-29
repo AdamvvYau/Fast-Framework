@@ -443,33 +443,36 @@ namespace Fast.Framework.Implements
                 var methodCallExpression = node.Arguments[i] as MethodCallExpression;
                 if (methodCallExpression != null && methodCallExpression.Method.CheckSetMemberInfos())
                 {
-                    GetValue.MethodCallAfter = (obj, result, exp) =>
-                    {
-                        if (exp.Method.Name.StartsWith("Query"))
-                        {
-                            var query = result as IQuery;
-                            query.QueryBuilder.IncludeSubQuery = true;
-                            query.QueryBuilder.ParentLambdaParameterInfos = LambdaParameterInfos;
-                            if (ResolveSqlOptions.ParentLambdaParameterInfos != null && ResolveSqlOptions.ParentLambdaParameterInfos.Any())
-                            {
-                                query.QueryBuilder.ParentLambdaParameterInfos.AddRange(ResolveSqlOptions.ParentLambdaParameterInfos);
-                            }
-                            query.QueryBuilder.ParentParameterCount = DbParameters.Count;
-                        }
-                    };
-                    var value = GetValue.Visit(node.Arguments[i]);
-                    if (value != null)
-                    {
-                        var type = value.GetType();
-                        if (type.FullName.StartsWith("System.Threading.Tasks") || type.FullName.StartsWith("System.Runtime.CompilerServices.AsyncTaskMethodBuilder"))
-                        {
-                            (value as dynamic).Wait();
-                        }
-                    }
                     SetMemberInfos.Add(new SetMemberInfo()
                     {
                         MemberInfo = node.Members[i],
-                        Value = value,
+                        Value = new Lazy<object>(() =>
+                        {
+                            GetValue.MethodCallAfter = (obj, result, exp) =>
+                            {
+                                if (exp.Method.Name.StartsWith("Query"))
+                                {
+                                    var query = result as IQuery;
+                                    query.QueryBuilder.IncludeSubQuery = true;
+                                    query.QueryBuilder.ParentLambdaParameterInfos = LambdaParameterInfos;
+                                    if (ResolveSqlOptions.ParentLambdaParameterInfos != null && ResolveSqlOptions.ParentLambdaParameterInfos.Any())
+                                    {
+                                        query.QueryBuilder.ParentLambdaParameterInfos.AddRange(ResolveSqlOptions.ParentLambdaParameterInfos);
+                                    }
+                                    query.QueryBuilder.ParentParameterCount = DbParameters.Count;
+                                }
+                            };
+                            var value = GetValue.Visit(methodCallExpression);
+                            if (value != null)
+                            {
+                                var type = value.GetType();
+                                if (type.FullName.StartsWith("System.Threading.Tasks") || type.FullName.StartsWith("System.Runtime.CompilerServices.AsyncTaskMethodBuilder"))
+                                {
+                                    (value as dynamic).Wait();
+                                }
+                            }
+                            return value;
+                        }),
                         Index = i
                     });
                     SqlBuilder.Append($"{i} AS {ResolveSqlOptions.DbType.GetIdentifier().Insert(1, $"fast_args_index_{i}")}");
@@ -534,33 +537,36 @@ namespace Fast.Framework.Implements
                     var methodCallExpression = memberAssignment.Expression as MethodCallExpression;
                     if (methodCallExpression != null && methodCallExpression.Method.CheckSetMemberInfos())
                     {
-                        GetValue.MethodCallAfter = (obj, result, exp) =>
-                        {
-                            if (exp.Method.Name.StartsWith("Query"))
-                            {
-                                var query = result as IQuery;
-                                query.QueryBuilder.IncludeSubQuery = true;
-                                query.QueryBuilder.ParentLambdaParameterInfos = LambdaParameterInfos;
-                                if (ResolveSqlOptions.ParentLambdaParameterInfos != null && ResolveSqlOptions.ParentLambdaParameterInfos.Any())
-                                {
-                                    query.QueryBuilder.ParentLambdaParameterInfos.AddRange(ResolveSqlOptions.ParentLambdaParameterInfos);
-                                }
-                                query.QueryBuilder.ParentParameterCount = DbParameters.Count;
-                            }
-                        };
-                        var value = GetValue.Visit(memberAssignment.Expression);
-                        if (value != null)
-                        {
-                            var type = value.GetType();
-                            if (type.FullName.StartsWith("System.Threading.Tasks") || type.FullName.StartsWith("System.Runtime.CompilerServices.AsyncTaskMethodBuilder"))
-                            {
-                                (value as dynamic).Wait();
-                            }
-                        }
                         SetMemberInfos.Add(new SetMemberInfo()
                         {
                             MemberInfo = memberAssignment.Member,
-                            Value = value,
+                            Value = new Lazy<object>(() =>
+                            {
+                                GetValue.MethodCallAfter = (obj, result, exp) =>
+                                {
+                                    if (exp.Method.Name.StartsWith("Query"))
+                                    {
+                                        var query = result as IQuery;
+                                        query.QueryBuilder.IncludeSubQuery = true;
+                                        query.QueryBuilder.ParentLambdaParameterInfos = LambdaParameterInfos;
+                                        if (ResolveSqlOptions.ParentLambdaParameterInfos != null && ResolveSqlOptions.ParentLambdaParameterInfos.Any())
+                                        {
+                                            query.QueryBuilder.ParentLambdaParameterInfos.AddRange(ResolveSqlOptions.ParentLambdaParameterInfos);
+                                        }
+                                        query.QueryBuilder.ParentParameterCount = DbParameters.Count;
+                                    }
+                                };
+                                var value = GetValue.Visit(memberAssignment.Expression);
+                                if (value != null)
+                                {
+                                    var type = value.GetType();
+                                    if (type.FullName.StartsWith("System.Threading.Tasks") || type.FullName.StartsWith("System.Runtime.CompilerServices.AsyncTaskMethodBuilder"))
+                                    {
+                                        (value as dynamic).Wait();
+                                    }
+                                }
+                                return value;
+                            }),
                             Index = i
                         });
                         SqlBuilder.Append($"{i} AS {ResolveSqlOptions.DbType.GetIdentifier().Insert(1, $"fast_index_{i}")}");

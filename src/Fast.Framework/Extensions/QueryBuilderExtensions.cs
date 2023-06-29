@@ -232,9 +232,9 @@ namespace Fast.Framework.Extensions
             {
                 foreach (var item in queryBuilder.SetMemberInfos)
                 {
-                    if (item.Value != null)
+                    if (item.Value.Value != null)
                     {
-                        item.MemberInfo.SetValue(obj, item.Value);
+                        item.MemberInfo.SetValue(obj, item.Value.Value);
                     }
                 }
             }
