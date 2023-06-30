@@ -376,6 +376,16 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
               Console.WriteLine($"字典列表更新 受影响行数 {result}");
   ```
   
+- 设置列更新
+
+  ```c#
+                  db.Update<Product>().SetColumns(c => new Product()
+                  {
+                      ProductCode = "1001",
+                      ProductName = "测试产品1"
+                  }).Where(w => w.ProductId == 1).Exceute();
+  ```
+  
 - 指定条件更新
 
   ```C#
