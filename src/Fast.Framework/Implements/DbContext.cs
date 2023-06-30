@@ -433,7 +433,7 @@ namespace Fast.Framework.Implements
             else
             {
                 insertBuilder.EntityInfo = type.GetEntityInfo();
-                insertBuilder.DbParameters = insertBuilder.EntityInfo.ColumnsInfos.GenerateDbParameters(entity, c => c.DatabaseGeneratedOption != DatabaseGeneratedOption.Identity && !c.IsNotMapped);
+                insertBuilder.DbParameters = insertBuilder.EntityInfo.ColumnsInfos.GenerateDbParameters(entity, c => c.DatabaseGeneratedOption != DatabaseGeneratedOption.Identity && !c.IsNotMapped && !c.IsNavigate);
                 insertBuilder.ComputedValues.AddRange(insertBuilder.EntityInfo.ColumnsInfos.ComputedValues(insertBuilder.DbParameters));
             }
 
@@ -693,7 +693,7 @@ namespace Fast.Framework.Implements
             else
             {
                 updateBuilder.EntityInfo = type.GetEntityInfo();
-                updateBuilder.DbParameters = updateBuilder.EntityInfo.ColumnsInfos.GenerateDbParameters(entity, c => !c.IsNotMapped);
+                updateBuilder.DbParameters = updateBuilder.EntityInfo.ColumnsInfos.GenerateDbParameters(entity, c => !c.IsNotMapped && !c.IsNavigate);
             }
 
             updateBuilder.EntityInfo.TargetObj = entity;
