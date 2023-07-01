@@ -74,7 +74,10 @@ namespace Fast.Framework.Logging.Service
                                     foreach (var item in removeFileInfo)
                                     {
                                         FileStreamHelper.Remove(item.FullName);//关闭流再删除
-                                        File.Delete(item.FullName);
+                                        if (File.Exists(item.FullName))//存在则删除,避免文件不存在删除异常
+                                        {
+                                            File.Delete(item.FullName);
+                                        }
                                     }
                                 }
 
