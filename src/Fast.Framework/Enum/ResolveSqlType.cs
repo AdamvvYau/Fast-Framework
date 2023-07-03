@@ -26,13 +26,11 @@ namespace Fast.Framework.Enum
         /// <summary>
         /// new作为
         /// </summary>
-        [Flag("AS")]
         NewAs = 3,
 
         /// <summary>
         /// new赋值
         /// </summary>
-        [Flag("=")]
         NewAssignment = 4,
 
         /// <summary>

@@ -437,7 +437,6 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         private Expression VisitNew(NewExpression node)
         {
-            var flagAttribute = typeof(ResolveSqlType).GetField(ResolveSqlOptions.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
             for (int i = 0; i < node.Arguments.Count; i++)
             {
                 var methodCallExpression = node.Arguments[i] as MethodCallExpression;
@@ -482,7 +481,7 @@ namespace Fast.Framework.Implements
                     if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAs)
                     {
                         Visit(node.Arguments[i]);
-                        SqlBuilder.Append($" {flagAttribute?.Value} ");
+                        SqlBuilder.Append(" AS ");
                         var name = node.Members[i].GetCustomAttribute<ColumnAttribute>(false)?.Name;
                         if (ResolveSqlOptions.IgnoreIdentifier)
                         {
@@ -504,7 +503,7 @@ namespace Fast.Framework.Implements
                         {
                             SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? node.Members[i].Name)}");
                         }
-                        SqlBuilder.Append($" {flagAttribute?.Value} ");
+                        SqlBuilder.Append(" = ");
                         Visit(node.Arguments[i]);
                     }
                     else
@@ -528,7 +527,6 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         private Expression VisitMemberInit(MemberInitExpression node)
         {
-            var flagAttribute = typeof(ResolveSqlType).GetField(ResolveSqlOptions.ResolveSqlType.ToString()).GetCustomAttribute<FlagAttribute>(false);
             for (int i = 0; i < node.Bindings.Count; i++)
             {
                 if (node.Bindings[i].BindingType == MemberBindingType.Assignment)
@@ -577,10 +575,10 @@ namespace Fast.Framework.Implements
                         {
                             Visit(memberAssignment.Expression);
                             var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
-                            SqlBuilder.Append($" {flagAttribute?.Value} ");
+                            SqlBuilder.Append(" AS ");
                             if (ResolveSqlOptions.IgnoreIdentifier)
                             {
-                                SqlBuilder.Append(name == null ? memberAssignment.Member.Name : name);
+                                SqlBuilder.Append(name ?? memberAssignment.Member.Name);
                             }
                             else
                             {
@@ -592,13 +590,13 @@ namespace Fast.Framework.Implements
                             var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
                             if (ResolveSqlOptions.IgnoreIdentifier)
                             {
-                                SqlBuilder.Append(name == null ? memberAssignment.Member.Name : name);
+                                SqlBuilder.Append(name ?? memberAssignment.Member.Name);
                             }
                             else
                             {
                                 SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? memberAssignment.Member.Name)}");
                             }
-                            SqlBuilder.Append($" {flagAttribute?.Value} ");
+                            SqlBuilder.Append(" = ");
                             Visit(memberAssignment.Expression);
                         }
                         else
