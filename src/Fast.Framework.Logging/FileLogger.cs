@@ -89,11 +89,11 @@ namespace Fast.Framework.Logging
             {
                 try
                 {
-                    var baseDirectory = configuration.GetSection("Logging:FileLog:BaseDirectory").Value;
-                    var fileName = configuration.GetSection("Logging:FileLog:FileName").Value;
-                    var extensionName = configuration.GetSection("Logging:FileLog:ExtensionName").Value;
+                    var fileLogOptions = configuration.GetSection("Logging:FileLog").Get<FileLogOptions>() ?? new FileLogOptions();
 
-                    var directory = Path.Combine(AppContext.BaseDirectory, string.IsNullOrWhiteSpace(baseDirectory) ? "app_log" : baseDirectory);
+                    var fileName = fileLogOptions.FileName;
+
+                    var directory = Path.Combine(AppContext.BaseDirectory, string.IsNullOrWhiteSpace(fileLogOptions.BaseDirectory) ? "app_log" : fileLogOptions.BaseDirectory);
 
                     directory = Path.Combine(directory, logLevel.ToString());//拼接子目录
 
@@ -111,20 +111,19 @@ namespace Fast.Framework.Logging
                     {
                         fileName = DateTime.Now.ToString(fileName);
                     }
-                    extensionName = string.IsNullOrWhiteSpace(extensionName) ? ".log" : extensionName;
 
-                    var path = Path.Combine(directory, $"{fileName}{extensionName}");
+                    var path = Path.Combine(directory, $"{fileName}{(string.IsNullOrWhiteSpace(fileLogOptions.ExtensionName) ? ".log" : fileLogOptions.ExtensionName)}");
 
                     var isAppend = false;//是否追加
 
-                    var dateTimeFormart = configuration.GetSection("Logging:FileLog:DateTimeFormat").Value;
+                    var dateTimeFormart = fileLogOptions.DateTimeFormat;
 
                     var logTime = DateTime.Now.ToString((string.IsNullOrWhiteSpace(dateTimeFormart) ? "yyyy-MM-dd HH:mm:ss.fff" : dateTimeFormart));
                     var message = formatter(state, exception);
 
                     var stackTrace = exception?.StackTrace;
 
-                    var template = configuration.GetSection("Logging:FileLog:Template").Value;
+                    var template = fileLogOptions.Template;
 
                     var sb = new StringBuilder();
 
@@ -154,10 +153,10 @@ namespace Fast.Framework.Logging
 
                     if (File.Exists(path))
                     {
-                        var maxSize = configuration.GetSection("Logging:FileLog:MaxFileSize").Value;
+                        var maxSize = fileLogOptions.MaxFileSize;
                         var fileInfo = new FileInfo(path);
                         //小于最大文件大小追加
-                        isAppend = fileInfo.Length / 1024.00 < (string.IsNullOrWhiteSpace(maxSize) ? 2048.00 : Convert.ToDouble(maxSize));
+                        isAppend = fileInfo.Length / 1024.00 < (maxSize > 0 ? maxSize : 2048.00);
                     }
 
                     FileStreamHelper.Write(path, sb.ToString(), isAppend);

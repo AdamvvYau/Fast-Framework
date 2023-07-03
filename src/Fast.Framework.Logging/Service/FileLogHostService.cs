@@ -52,10 +52,11 @@ namespace Fast.Framework.Logging.Service
             {
                 while (!stoppingToken.IsCancellationRequested)
                 {
+                    var fileLogOptions = configuration.GetSection("Logging:FileLog").Get<FileLogOptions>() ?? new FileLogOptions();
                     try
                     {
                         LockHelper.mutex.WaitOne();
-                        var maxFileCount = Convert.ToInt32(configuration.GetSection("Logging:FileLog:MaxFileCount").Value);
+
                         foreach (var directory in DirectoryHelper.GetDirectorys())
                         {
                             var directoryInfo = new DirectoryInfo(directory);
@@ -68,9 +69,9 @@ namespace Fast.Framework.Logging.Service
                             else
                             {
                                 //最大文件个数限制清理
-                                if (fileInfos.Length > maxFileCount)
+                                if (fileInfos.Length > fileLogOptions.MaxFileCount)
                                 {
-                                    var removeFileInfo = fileInfos.OrderBy(o => o.CreationTime).ThenBy(o => o.LastWriteTime).SkipLast(maxFileCount).ToList();
+                                    var removeFileInfo = fileInfos.OrderBy(o => o.CreationTime).ThenBy(o => o.LastWriteTime).SkipLast(fileLogOptions.MaxFileCount).ToList();
                                     foreach (var item in removeFileInfo)
                                     {
                                         FileStreamHelper.Remove(item.FullName);//关闭流再删除
@@ -102,8 +103,7 @@ namespace Fast.Framework.Logging.Service
                     {
                         LockHelper.mutex.ReleaseMutex();
                     }
-                    var autolearDelay = Convert.ToInt32(configuration.GetSection("Logging:FileLog:AutolearDelay").Value);
-                    await Task.Delay(autolearDelay > 0 ? autolearDelay : 600000, stoppingToken);//默认10分钟清理
+                    await Task.Delay(fileLogOptions.AutoClearDelay > 0 ? fileLogOptions.AutoClearDelay : 600000, stoppingToken);//默认10分钟清理
                 }
             }, stoppingToken);
         }
