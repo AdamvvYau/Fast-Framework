@@ -28,5 +28,15 @@ namespace Fast.Framework.Models
         /// 对称安全密钥
         /// </summary>
         public string SymmetricSecurityKey { get; set; } = Guid.NewGuid().ToString();
+
+        /// <summary>
+        /// 过期时间 分
+        /// </summary>
+        public int ExpirationTime { get; set; } = 20;
+
+        /// <summary>
+        /// 刷新过期时间 分
+        /// </summary>
+        public int RefreshExpirationTime { get; set; } = 20160;
     }
 }
