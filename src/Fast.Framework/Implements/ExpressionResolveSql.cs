@@ -700,10 +700,6 @@ namespace Fast.Framework.Implements
                         }
                         else if (ResolveSqlOptions.ParentLambdaParameterInfos.Any(a => a.ParameterName == parameterExpression.Name))
                         {
-                            if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where)
-                            {
-                                ResolveSqlOptions.ResolveSqlType = ResolveSqlType.Join;//更改为联表条件
-                            }
                             var parentLambdaParameterInfo = ResolveSqlOptions.ParentLambdaParameterInfos.First(f => f.ParameterName == parameterExpression.Name);
                             parentLambdaParameterInfo.IsUsing = true;//标记为被引用
                             parameterName = ResolveSqlOptions.UseCustomParameter ? $"{parentLambdaParameterInfo.ResolveName}{parentLambdaParameterInfo.ParameterIndex}" : parentLambdaParameterInfo.ResolveName;

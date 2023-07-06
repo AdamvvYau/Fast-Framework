@@ -289,6 +289,10 @@ namespace Fast.Framework.Abstract
 
                     if (IncludeSubQuery)
                     {
+                        if (item.ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where)
+                        {
+                            item.ResolveSqlOptions.ResolveSqlType = ResolveSqlType.Join;//更改为联表条件
+                        }
                         foreach (var lambdaParameterInfo in usingLambdaParameterInfos)
                         {
                             var firstJoinInfo = Join.LastOrDefault(f =>
