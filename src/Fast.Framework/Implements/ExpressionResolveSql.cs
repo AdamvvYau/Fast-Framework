@@ -452,7 +452,7 @@ namespace Fast.Framework.Implements
                                 if (exp.Method.Name.StartsWith("Query"))
                                 {
                                     var query = result as IQuery;
-                                    query.QueryBuilder.IncludeSubQuery = true;
+                                    query.QueryBuilder.IsNestedQuery = true;
                                     query.QueryBuilder.ParentLambdaParameterInfos = LambdaParameterInfos;
                                     if (ResolveSqlOptions.ParentLambdaParameterInfos != null && ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                                     {
@@ -545,7 +545,7 @@ namespace Fast.Framework.Implements
                                     if (exp.Method.Name.StartsWith("Query"))
                                     {
                                         var query = result as IQuery;
-                                        query.QueryBuilder.IncludeSubQuery = true;
+                                        query.QueryBuilder.IsNestedQuery = true;
                                         query.QueryBuilder.ParentLambdaParameterInfos = LambdaParameterInfos;
                                         if (ResolveSqlOptions.ParentLambdaParameterInfos != null && ResolveSqlOptions.ParentLambdaParameterInfos.Any())
                                         {

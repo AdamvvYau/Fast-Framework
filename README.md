@@ -639,6 +639,9 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
                   }).First();
   
   				//进价用法，下面示例方法的重载均支持
+                  var count = 0;
+                  var refAsync = new RefAsync<int>();
+  
                   var query = db.Query<Product>().Select(s => new
                   {
                       WithAttr_First = db.QueryWithAttr<Product>().First(),

@@ -125,14 +125,19 @@ namespace Fast.Framework.Abstract
         public List<FastParameter> DbParameters { get; set; }
 
         /// <summary>
-        /// 包含子查询
+        /// 是否包含子查询
         /// </summary>
-        public bool IncludeSubQuery { get; set; }
+        public bool IsIncludeSubQuery { get; set; }
 
         /// <summary>
         /// 是否子查询
         /// </summary>
         public bool IsSubQuery { get; set; }
+
+        /// <summary>
+        /// 是否嵌套查询
+        /// </summary>
+        public bool IsNestedQuery { get; set; }
 
         /// <summary>
         /// 父级Lambda参数信息
@@ -270,9 +275,10 @@ namespace Fast.Framework.Abstract
         {
             if (!Expressions.ResolveComplete && Expressions.ExpressionInfos.Count > 0)
             {
+                IsIncludeSubQuery = Expressions.ExpressionInfos.Any(a => a.Expression.ToString().Contains(".Query()"));
                 foreach (var item in Expressions.ExpressionInfos)
                 {
-                    item.ResolveSqlOptions.IgnoreParameter = Join.Count == 0 && !IsSubQuery && !IncludeSubQuery;
+                    item.ResolveSqlOptions.IgnoreParameter = Join.Count == 0 && !IsSubQuery && !IsIncludeSubQuery && !IsNestedQuery;
 
                     item.ResolveSqlOptions.DbParameterStartIndex = ParentParameterCount + DbParameters.Count + 1;//数据库参数起始索引
 
@@ -287,7 +293,7 @@ namespace Fast.Framework.Abstract
 
                     var usingLambdaParameterInfos = item.ResolveSqlOptions.ParentLambdaParameterInfos.Where(w => w.IsUsing).OrderBy(o => o.ParameterIndex).ToList();
 
-                    if (IncludeSubQuery)
+                    if (IsNestedQuery)
                     {
                         if (item.ResolveSqlOptions.ResolveSqlType == ResolveSqlType.Where)
                         {
@@ -325,7 +331,7 @@ namespace Fast.Framework.Abstract
                         }
                     }
 
-                    if (IsSubQuery || IncludeSubQuery)
+                    if (IsIncludeSubQuery || IsSubQuery || IsNestedQuery)
                     {
                         var main = result.LambdaParameterInfos.First();
                         EntityInfo.Alias = item.ResolveSqlOptions.UseCustomParameter ? $"{main.ResolveName}{main.ParameterIndex}" : main.ResolveName;
@@ -415,7 +421,7 @@ namespace Fast.Framework.Abstract
             }
             else
             {
-                if (Join.Count == 0 && !IsSubQuery && !IncludeSubQuery)
+                if (Join.Count == 0 && !IsSubQuery && !IsIncludeSubQuery && !IsNestedQuery)
                 {
                     return identifier.Insert(1, EntityInfo.TableName);
                 }
@@ -468,10 +474,11 @@ namespace Fast.Framework.Abstract
                 sb.Append("\r\n\r\n");
             }
 
-            //子查询初始化别名
-            if ((IsSubQuery || IncludeSubQuery) && Expressions.ExpressionInfos.Count == 0)
+            //子查询&嵌套查询初始化别名
+            if ((IsSubQuery || IsNestedQuery) && Expressions.ExpressionInfos.Count == 0)
             {
-                EntityInfo.Alias = $"p{ParentLambdaParameterInfos.Max(m => m.ParameterIndex) + 1}";
+                var lambdaParameterInfo = ParentLambdaParameterInfos.Last();
+                EntityInfo.Alias = $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex + 1}";
             }
 
             //初始化列
@@ -479,7 +486,7 @@ namespace Fast.Framework.Abstract
             {
                 var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsNavigate);
                 var columnNames = columnInfos.Select(s => s.ColumnName).ToList();
-                var selectValues = columnInfos.Select(s => $"{(Join.Count == 0 && !IsSubQuery && !IncludeSubQuery ? "" : $"{EntityInfo.Alias}.")}{identifier.Insert(1, s.ColumnName)}").ToList();
+                var selectValues = columnInfos.Select(s => $"{(Join.Count == 0 && !IsSubQuery && !IsIncludeSubQuery && !IsNestedQuery ? "" : $"{EntityInfo.Alias}.")}{identifier.Insert(1, s.ColumnName)}").ToList();
                 if (Join.Count > 0)
                 {
                     Join.ForEach(i =>
@@ -580,8 +587,9 @@ namespace Fast.Framework.Abstract
             queryBuilder.DbParameters.AddRange(this.DbParameters);
             queryBuilder.ParentLambdaParameterInfos = this.ParentLambdaParameterInfos;
             queryBuilder.ParentParameterCount = this.ParentParameterCount;
-            queryBuilder.IncludeSubQuery = this.IncludeSubQuery;
+            queryBuilder.IsIncludeSubQuery = this.IsIncludeSubQuery;
             queryBuilder.IsSubQuery = this.IsSubQuery;
+            queryBuilder.IsNestedQuery = this.IsNestedQuery;
             queryBuilder.GroupBy.AddRange(this.GroupBy);
             queryBuilder.Having.AddRange(this.Having);
             queryBuilder.OrderBy.AddRange(this.OrderBy);
