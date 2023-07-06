@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
 using System.Text.Unicode;
@@ -19,6 +20,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
@@ -35,6 +37,9 @@ builder.Services.AddFastDbContext();
 
 //注册工作单元
 builder.Services.AddUnitOfWork();
+
+//加载JWT配置
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOptions"));
 
 //注册Http上下文
 builder.Services.AddHttpContextAccessor();
@@ -103,9 +108,21 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 builder.Services.AddTransient<IClientErrorFactory, ClientErrorFactory>();
 
+var jwtOptions = builder.Configuration.GetSection("JwtOptions").Get<JwtOptions>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = Token.tokenValidationParameters;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,//验证颁发者
+        ValidateAudience = true,//验证接收者
+        ValidateLifetime = true,//验证过期时间
+        ValidateIssuerSigningKey = true, //是否验证签名
+        ValidIssuer = jwtOptions.Issuer,//颁发者
+        ValidAudience = jwtOptions.Audience,//接收者
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SymmetricSecurityKey)),//解密密钥
+        ClockSkew = TimeSpan.Zero //缓冲时间
+    };
     options.Events = new JwtBearerEvents()
     {
         OnChallenge = context =>
