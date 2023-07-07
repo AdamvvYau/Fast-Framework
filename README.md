@@ -589,12 +589,11 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
   
                   var data = db.Query<Category>()
                       .Include(i => i.Products)
-                      .ThenInclude(i => i.Category)
                       .ToList();
   ```
-
   
-
+  
+  
 - 查询并插入  仅支持同实例的数据库 跨库 个人还是建议 用事务分开写查询和插入
 
   ```c#
@@ -690,15 +689,29 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
 - From子查询
 
   ```C#
-                  var subQuery = db.Query<Product>();
-                  var data = db.Query(subQuery).OrderBy(o => o.ProductCode).ToList();
+                  var subQuery2 = db.Query<Product>().Select(s=>new
+                  {
+                      s.ProductId,
+                      s.CategoryId,
+                      s.ProductCode,
+                      s.ProductName,
+                      s.DeleteMark
+                  });
+                  var data = db.Query(subQuery2).ToList();
   ```
   
 - Join子查询
 
   ```C#
-                  var subQuery = db.Query<Product>();
-                  var data = db.Query<Product>().InnerJoin(subQuery, (a, b) => a.ProductId == b.ProductId).ToList();
+                  var subQuery1 = db.Query<Product>().Select(s => new
+                  {
+                      s.ProductId,
+                      s.CategoryId,
+                      s.ProductCode,
+                      s.ProductName,
+                      s.DeleteMark
+                  });
+                  var data = db.Query<Category>().InnerJoin(subQuery1, (a, b) => a.CategoryId == b.CategoryId).ToList();
   ```
   
 - Include查询
