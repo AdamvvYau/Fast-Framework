@@ -144,23 +144,33 @@ namespace Fast.Framework.Test
                 //Console.WriteLine($"插入实体 受影响行数:{result} 执行耗时:{stopwatch.ElapsedMilliseconds}ms {stopwatch.ElapsedMilliseconds / 1000.00}s");
 
                 //// Join子查询
-                //var subQuery1 = db.Query<Product>();
-                //var sql1 = db.Query<Product>().InnerJoin(subQuery1, (a, b) => a.ProductId == b.ProductId).ToSqlString();
-                //Console.WriteLine(sql1);
+                //var subQuery1 = db.Query<Product>().Select(s => new
+                //{
+                //    s.ProductId,
+                //    s.CategoryId,
+                //    s.ProductCode,
+                //    s.ProductName,
+                //    s.DeleteMark
+                //});
+                //var data = db.Query<Category>().InnerJoin(subQuery1, (a, b) => a.CategoryId == b.CategoryId).ToList();
 
                 //Console.WriteLine();
 
-                //// From子查询
-                //var subQuery2 = db.Query<Product>();
-                //var sql2 = db.Query(subQuery2).OrderBy(o => o.ProductCode).ToSqlString();
-                //Console.WriteLine(sql2);
+                // From子查询
+                //var subQuery2 = db.Query<Product>().Select(s=>new
+                //{
+                //    s.ProductId,
+                //    s.CategoryId,
+                //    s.ProductCode,
+                //    s.ProductName,
+                //    s.DeleteMark
+                //});
+                //var data = db.Query(subQuery2).ToList();
 
                 //// 导航查询
                 //var data = db.Query<Category>()
                 //    .Include(i => i.Products)
-                //    .ThenInclude(i => i.Category)
                 //    .ToList();
-
             }
             catch (Exception ex)
             {
