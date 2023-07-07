@@ -21,7 +21,7 @@ namespace Fast.Framework.Implements
     /// <summary>
     /// 表达式解析值
     /// </summary>
-    public class ExpressionResolveValue : IExpressionResolveValue
+    public class ExpResolveValue : IExpResolveValue
     {
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Fast.Framework.Implements
         /// <summary>
         /// 构造方法
         /// </summary>
-        public ExpressionResolveValue()
+        public ExpResolveValue()
         {
             this.memberInfos = new Stack<MemberInfoEx>();
             this.arrayIndexs = new Stack<int>();

@@ -31,6 +31,11 @@ namespace Fast.Framework.Abstract
         public virtual DbType DbType { get; private set; } = DbType.SQLServer;
 
         /// <summary>
+        /// Lambda表达式
+        /// </summary>
+        public ILambdaExp LambdaExp { get; }
+
+        /// <summary>
         /// 实体信息
         /// </summary>
         public EntityInfo EntityInfo { get; set; }

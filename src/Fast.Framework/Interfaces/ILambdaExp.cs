@@ -11,9 +11,9 @@ namespace Fast.Framework.Interfaces
 {
 
     /// <summary>
-    /// 表达式接口类
+    /// Lambda表达式接口类
     /// </summary>
-    public interface IExpressions
+    public interface ILambdaExp
     {
 
         /// <summary>

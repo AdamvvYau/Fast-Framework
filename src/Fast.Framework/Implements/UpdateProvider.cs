@@ -195,7 +195,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IUpdate<T> SetColumns(Expression<Func<T, object>> expression)
         {
-            UpdateBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            UpdateBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -386,7 +386,7 @@ namespace Fast.Framework
             {
                 UpdateBuilder.EntityInfo.Alias = expression.Parameters[0].Name;
             }
-            UpdateBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            UpdateBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {

@@ -11,7 +11,7 @@ namespace Fast.Framework.Interfaces
     /// <summary>
     /// 表达式解析值接口
     /// </summary>
-    public interface IExpressionResolveValue
+    public interface IExpResolveValue
     {
         /// <summary>
         /// 访问

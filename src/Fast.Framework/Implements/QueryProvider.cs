@@ -125,7 +125,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -395,7 +395,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T> Where(Expression<Func<T, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -416,7 +416,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T> Where<Table>(Expression<Func<T, Table, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -451,7 +451,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T> GroupBy(Expression<Func<T, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -475,7 +475,7 @@ namespace Fast.Framework
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法.");
             }
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -509,7 +509,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T> OrderBy(Expression<Func<T, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -551,7 +551,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -598,7 +598,7 @@ namespace Fast.Framework
                 IgnoreParameter = true
             });
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -904,7 +904,7 @@ namespace Fast.Framework
         /// <param name="expression">表达式</param>
         private void Count_(Expression<Func<T, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -1690,7 +1690,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -1811,7 +1811,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2> Where(Expression<Func<T, T2, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -1846,7 +1846,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2> GroupBy(Expression<Func<T, T2, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -1869,7 +1869,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -1890,7 +1890,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2> OrderBy(Expression<Func<T, T2, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -1910,7 +1910,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -1984,7 +1984,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -2105,7 +2105,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3> Where(Expression<Func<T, T2, T3, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2140,7 +2140,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3> GroupBy(Expression<Func<T, T2, T3, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2164,7 +2164,7 @@ namespace Fast.Framework
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2185,7 +2185,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3> OrderBy(Expression<Func<T, T2, T3, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2205,7 +2205,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2280,7 +2280,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -2401,7 +2401,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4> Where(Expression<Func<T, T2, T3, T4, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2436,7 +2436,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4> GroupBy(Expression<Func<T, T2, T3, T4, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2459,7 +2459,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2480,7 +2480,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4> OrderBy(Expression<Func<T, T2, T3, T4, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2500,7 +2500,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2576,7 +2576,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -2697,7 +2697,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5> Where(Expression<Func<T, T2, T3, T4, T5, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2732,7 +2732,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5> GroupBy(Expression<Func<T, T2, T3, T4, T5, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2755,7 +2755,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2776,7 +2776,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5> OrderBy(Expression<Func<T, T2, T3, T4, T5, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2796,7 +2796,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -2873,7 +2873,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -2994,7 +2994,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6> Where(Expression<Func<T, T2, T3, T4, T5, T6, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3029,7 +3029,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6> GroupBy(Expression<Func<T, T2, T3, T4, T5, T6, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3052,7 +3052,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3073,7 +3073,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6> OrderBy(Expression<Func<T, T2, T3, T4, T5, T6, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3093,7 +3093,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3171,7 +3171,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -3292,7 +3292,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7> Where(Expression<Func<T, T2, T3, T4, T5, T6, T7, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3327,7 +3327,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7> GroupBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3350,7 +3350,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3371,7 +3371,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7> OrderBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3391,7 +3391,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3470,7 +3470,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -3591,7 +3591,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8> Where(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3626,7 +3626,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8> GroupBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3649,7 +3649,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3670,7 +3670,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8> OrderBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3690,7 +3690,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3770,7 +3770,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -3891,7 +3891,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9> Where(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3926,7 +3926,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9> GroupBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3949,7 +3949,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3970,7 +3970,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9> OrderBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -3990,7 +3990,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4071,7 +4071,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -4192,7 +4192,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9, T10> Where(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4227,7 +4227,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9, T10> GroupBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4250,7 +4250,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4271,7 +4271,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9, T10> OrderBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4290,7 +4290,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4372,7 +4372,7 @@ namespace Fast.Framework
                 Expression = expression
             };
 
-            QueryBuilder.Expressions.ExpressionInfos.Add(expressionInfo);
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(expressionInfo);
 
             var joinInfo = new JoinInfo()
             {
@@ -4493,7 +4493,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> Where(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4528,7 +4528,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> GroupBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4551,7 +4551,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4572,7 +4572,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> OrderBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4592,7 +4592,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4659,7 +4659,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> Where(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, bool>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4694,7 +4694,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> GroupBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, object>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4717,7 +4717,7 @@ namespace Fast.Framework
             {
                 throw new Exception("必须包含GroupBy方法才可以使用Having方法");
             }
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4738,7 +4738,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> OrderBy(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, object>> expression, OrderByType orderByType = OrderByType.ASC)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {
@@ -4758,7 +4758,7 @@ namespace Fast.Framework
         /// <returns></returns>
         public IQuery<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>> expression)
         {
-            QueryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            QueryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {

@@ -145,7 +145,7 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         public IDelete<T> Where(Expression<Func<T, bool>> expression)
         {
-            DeleteBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            DeleteBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {

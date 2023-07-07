@@ -14,7 +14,7 @@ namespace Fast.Framework.Interfaces
     /// <summary>
     /// 表达式解析Sql接口类
     /// </summary>
-    public interface IExpressionResolveSql
+    public interface IExpResolveSql
     {
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Fast.Framework.Interfaces
         /// <summary>
         /// 获取值
         /// </summary>
-        IExpressionResolveValue GetValue { get; }
+        IExpResolveValue GetValue { get; }
 
         /// <summary>
         /// 访问

@@ -98,7 +98,7 @@ namespace Fast.Framework.Extensions
         {
             var queryBuilder = include.QueryBuilder.IncludeInfos.Last().QueryBuilder;
 
-            queryBuilder.Expressions.ExpressionInfos.Add(new ExpressionInfo()
+            queryBuilder.LambdaExp.ExpressionInfos.Add(new ExpressionInfo()
             {
                 ResolveSqlOptions = new ResolveSqlOptions()
                 {

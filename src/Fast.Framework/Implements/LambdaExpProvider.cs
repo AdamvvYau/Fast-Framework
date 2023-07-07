@@ -14,7 +14,7 @@ namespace Fast.Framework.Implements
     /// <summary>
     /// 表达式提供者
     /// </summary>
-    public class ExpressionProvider : IExpressions
+    public class LambdaExpProvider : ILambdaExp
     {
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace Fast.Framework.Implements
         /// <summary>
         /// 构造方法
         /// </summary>
-        public ExpressionProvider()
+        public LambdaExpProvider()
         {
             ExpressionInfos = new List<ExpressionInfo>();
         }

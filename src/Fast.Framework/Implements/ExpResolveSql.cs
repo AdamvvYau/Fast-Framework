@@ -22,7 +22,7 @@ namespace Fast.Framework.Implements
     /// <summary>
     /// 表达式解析Sql
     /// </summary>
-    public class ExpressionResolveSql : IExpressionResolveSql
+    public class ExpResolveSql : IExpResolveSql
     {
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Fast.Framework.Implements
         /// <summary>
         /// 获取值
         /// </summary>
-        public IExpressionResolveValue GetValue { get; }
+        public IExpResolveValue GetValue { get; }
 
         /// <summary>
         /// Sql构建
@@ -78,14 +78,14 @@ namespace Fast.Framework.Implements
         /// <summary>
         /// 构造方法
         /// </summary>
-        public ExpressionResolveSql(ResolveSqlOptions options)
+        public ExpResolveSql(ResolveSqlOptions options)
         {
             this.ResolveSqlOptions = options;
             this.memberInfos = new Stack<MemberInfoEx>();
             this.arrayIndexs = new Stack<int>();
 
             LambdaParameterInfos = new List<LambdaParameterInfo>();
-            GetValue = new ExpressionResolveValue();
+            GetValue = new ExpResolveValue();
             SqlBuilder = new StringBuilder();
             DbParameters = new List<FastParameter>();
             SetMemberInfos = new List<SetMemberInfo>();

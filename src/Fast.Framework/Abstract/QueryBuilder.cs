@@ -25,9 +25,9 @@ namespace Fast.Framework.Abstract
         public virtual Enum.DbType DbType { get; private set; } = Enum.DbType.SQLServer;
 
         /// <summary>
-        /// 表达式
+        /// Lambda表达式
         /// </summary>
-        public IExpressions Expressions { get; }
+        public ILambdaExp LambdaExp { get; }
 
         /// <summary>
         /// 是否包括
@@ -254,7 +254,7 @@ namespace Fast.Framework.Abstract
         /// </summary>
         public QueryBuilder()
         {
-            Expressions = new ExpressionProvider();
+            LambdaExp = new LambdaExpProvider();
             IncludeInfos = new List<IncludeInfo>();
             SetMemberInfos = new List<SetMemberInfo>();
             EntityInfo = new EntityInfo();
@@ -273,10 +273,10 @@ namespace Fast.Framework.Abstract
         /// </summary>
         public virtual void ResolveExpressions()
         {
-            if (!Expressions.ResolveComplete && Expressions.ExpressionInfos.Count > 0)
+            if (!LambdaExp.ResolveComplete && LambdaExp.ExpressionInfos.Count > 0)
             {
-                IsIncludeSubQuery = Expressions.ExpressionInfos.Any(a => a.Expression.ToString().Contains(".Query()"));
-                foreach (var item in Expressions.ExpressionInfos)
+                IsIncludeSubQuery = LambdaExp.ExpressionInfos.Any(a => a.Expression.ToString().Contains(".Query()"));
+                foreach (var item in LambdaExp.ExpressionInfos)
                 {
                     item.ResolveSqlOptions.IgnoreParameter = Join.Count == 0 && !IsSubQuery && !IsIncludeSubQuery && !IsNestedQuery;
 
@@ -383,7 +383,7 @@ namespace Fast.Framework.Abstract
                     this.DbParameters.AddRange(result.DbParameters);
                     this.SetMemberInfos.AddRange(result.SetMemberInfos);
                 }
-                this.Expressions.ResolveComplete = true;
+                this.LambdaExp.ResolveComplete = true;
             }
         }
 
@@ -475,7 +475,7 @@ namespace Fast.Framework.Abstract
             }
 
             //子查询&嵌套查询初始化别名
-            if ((IsSubQuery || IsNestedQuery) && Expressions.ExpressionInfos.Count == 0)
+            if ((IsSubQuery || IsNestedQuery) && LambdaExp.ExpressionInfos.Count == 0)
             {
                 var lambdaParameterInfo = ParentLambdaParameterInfos.Last();
                 EntityInfo.Alias = $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex + 1}";

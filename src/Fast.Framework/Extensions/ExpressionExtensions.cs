@@ -27,7 +27,7 @@ namespace Fast.Framework.Extensions
         /// <summary>
         /// 方法映射
         /// </summary>
-        private static readonly Dictionary<DbType, Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>> methodMapping;
+        private static readonly Dictionary<DbType, Dictionary<string, Action<IExpResolveSql, MethodCallExpression, StringBuilder>>> methodMapping;
 
         /// <summary>
         /// 设置成员信息方法映射
@@ -57,7 +57,7 @@ namespace Fast.Framework.Extensions
                 { ExpressionType.GreaterThanOrEqual,">=" },
                 { ExpressionType.LessThanOrEqual,"<=" }
             };
-            methodMapping = new Dictionary<DbType, Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>>();
+            methodMapping = new Dictionary<DbType, Dictionary<string, Action<IExpResolveSql, MethodCallExpression, StringBuilder>>>();
 
             setMemberInfosMethodMapping = new List<string>()
             {
@@ -98,11 +98,11 @@ namespace Fast.Framework.Extensions
                 nameof(IQuery<object>.InsertAsync)
             };
 
-            var sqlserverFunc = new Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>();
-            var mysqlFunc = new Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>();
-            var oracleFunc = new Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>();
-            var pgsqlFunc = new Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>();
-            var sqliteFunc = new Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>();
+            var sqlserverFunc = new Dictionary<string, Action<IExpResolveSql, MethodCallExpression, StringBuilder>>();
+            var mysqlFunc = new Dictionary<string, Action<IExpResolveSql, MethodCallExpression, StringBuilder>>();
+            var oracleFunc = new Dictionary<string, Action<IExpResolveSql, MethodCallExpression, StringBuilder>>();
+            var pgsqlFunc = new Dictionary<string, Action<IExpResolveSql, MethodCallExpression, StringBuilder>>();
+            var sqliteFunc = new Dictionary<string, Action<IExpResolveSql, MethodCallExpression, StringBuilder>>();
 
             #region SqlServer 函数
 
@@ -3816,11 +3816,11 @@ namespace Fast.Framework.Extensions
         /// <param name="dbType">数据库类型</param>
         /// <param name="methodName">方法名称</param>
         /// <param name="action">委托</param>
-        public static void AddSqlFunc(this DbType dbType, string methodName, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder> action)
+        public static void AddSqlFunc(this DbType dbType, string methodName, Action<IExpResolveSql, MethodCallExpression, StringBuilder> action)
         {
             if (!methodMapping.ContainsKey(dbType))
             {
-                methodMapping.Add(dbType, new Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>>());//初始化类型
+                methodMapping.Add(dbType, new Dictionary<string, Action<IExpResolveSql, MethodCallExpression, StringBuilder>>());//初始化类型
             }
             dbType.MethodMapping().Add(methodName, action);
         }
@@ -3840,7 +3840,7 @@ namespace Fast.Framework.Extensions
         /// </summary>
         /// <param name="dbType">数据库类型</param>
         /// <returns></returns>
-        public static Dictionary<string, Action<IExpressionResolveSql, MethodCallExpression, StringBuilder>> MethodMapping(this DbType dbType)
+        public static Dictionary<string, Action<IExpResolveSql, MethodCallExpression, StringBuilder>> MethodMapping(this DbType dbType)
         {
             return methodMapping[dbType];
         }
@@ -3871,7 +3871,7 @@ namespace Fast.Framework.Extensions
         public static ResolveSqlResult ResolveSql(this Expression expression, ResolveSqlOptions options)
         {
             var result = new ResolveSqlResult();
-            var resolveSql = new ExpressionResolveSql(options);
+            var resolveSql = new ExpResolveSql(options);
             resolveSql.Visit(expression);
 
             result.SqlString = resolveSql.SqlBuilder.ToString();

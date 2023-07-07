@@ -24,9 +24,9 @@ namespace Fast.Framework.Abstract
         public virtual DbType DbType { get; private set; } = DbType.SQLServer;
 
         /// <summary>
-        /// 表达式
+        /// Lambda表达式
         /// </summary>
-        public IExpressions Expressions { get; }
+        public ILambdaExp LambdaExp { get; }
 
         /// <summary>
         /// 实体信息
@@ -58,7 +58,7 @@ namespace Fast.Framework.Abstract
         /// </summary>
         public DeleteBuilder()
         {
-            Expressions = new ExpressionProvider();
+            LambdaExp = new LambdaExpProvider();
             DbParameters = new List<FastParameter>();
             Where = new List<string>();
         }
@@ -68,9 +68,9 @@ namespace Fast.Framework.Abstract
         /// </summary>
         public virtual void ResolveExpressions()
         {
-            if (!this.Expressions.ResolveComplete && Expressions.ExpressionInfos.Count > 0)
+            if (!this.LambdaExp.ResolveComplete && LambdaExp.ExpressionInfos.Count > 0)
             {
-                foreach (var item in this.Expressions.ExpressionInfos)
+                foreach (var item in this.LambdaExp.ExpressionInfos)
                 {
                     item.ResolveSqlOptions.IgnoreParameter = true;
 
@@ -93,7 +93,7 @@ namespace Fast.Framework.Abstract
                         this.DbParameters.AddRange(result.DbParameters);
                     }
                 }
-                this.Expressions.ResolveComplete = true;
+                this.LambdaExp.ResolveComplete = true;
             }
         }
 

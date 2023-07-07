@@ -14,6 +14,11 @@ namespace Fast.Framework.Interfaces
     public interface ISqlBuilder
     {
         /// <summary>
+        /// Lambda表达式
+        /// </summary>
+        ILambdaExp LambdaExp { get; }
+
+        /// <summary>
         /// 实体信息
         /// </summary>
         EntityInfo EntityInfo { get; set; }
