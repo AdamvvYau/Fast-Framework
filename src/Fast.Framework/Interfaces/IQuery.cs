@@ -238,8 +238,9 @@ namespace Fast.Framework.Interfaces
         /// 选择
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
+        /// <param name="autoMapper">自动映射</param>
         /// <returns></returns>
-        IQuery<TResult> Select<TResult>();
+        IQuery<TResult> Select<TResult>(bool autoMapper = false);
 
         /// <summary>
         /// 选择

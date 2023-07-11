@@ -526,9 +526,18 @@ namespace Fast.Framework
         /// 选择
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
+        /// <param name="autoMapper">自动映射</param>
         /// <returns></returns>
-        public IQuery<TResult> Select<TResult>()
+        public IQuery<TResult> Select<TResult>(bool autoMapper = false)
         {
+            if (autoMapper)
+            {
+                var identifier = ado.DbOptions.DbType.GetIdentifier();
+                var entityInfo = typeof(TResult).GetEntityInfo();
+                var columnInfos = entityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsNavigate);
+                var selectValue = string.Join(",", columnInfos.Select(s => identifier.Insert(1, s.ColumnName)).ToList());
+                QueryBuilder.SelectValue = selectValue;
+            }
             return new QueryProvider<TResult>(ado, QueryBuilder);
         }
 
