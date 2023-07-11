@@ -16,13 +16,14 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
 
 ##### 二、项目明细
 
-| 名称                    | 说明                                       |
-| :---------------------- | :----------------------------------------- |
-| Fast.Framework          | 框架主项目                                 |
-| Fast.Framework.Logging  | 基于微软接口实现的文件日志(非必要可不引用) |
-| Fast.Framework.Test     | 控制台测试项目                             |
-| Fast.Framework.UnitTest | 单元测试项目                               |
-| Fast.Framework.Web.Test | Web测试项目                                |
+| 名称                               | 说明                        |
+| :--------------------------------- | :-------------------------- |
+| Fast.Framework                     | ORM                         |
+| Fast.Framework.Logging             | 文件日志 (扩展项目可不使用) |
+| Fast.Framework.DependencyInjection | 依赖注入 (扩展项目可不使用) |
+| Fast.Framework.Test                | 控制台测试项目              |
+| Fast.Framework.UnitTest            | 单元测试项目                |
+| Fast.Framework.Web.Test            | Web测试项目                 |
 
 ##### 三、核心对象
 

@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Fast.Framework.DependencyInjection\Fast.Framework.DependencyInjection.csproj" />
     <ProjectReference Include="..\..\src\Fast.Framework.Logging\Fast.Framework.Logging.csproj" />
     <ProjectReference Include="..\..\src\Fast.Framework\Fast.Framework.csproj" />
     <ProjectReference Include="..\Fast.Framework.Test.Models\Fast.Framework.Test.Models.csproj" />

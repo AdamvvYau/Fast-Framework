@@ -18,6 +18,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C9A6FD5F-BE2
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{31955DE1-1EE9-468E-9B94-40D141775C79}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fast.Framework.DependencyInjection", "src\Fast.Framework.DependencyInjection\Fast.Framework.DependencyInjection.csproj", "{8FD62A32-233A-4A7A-B345-5CED07825B79}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,6 +74,14 @@ Global
 		{97BEC969-BB0A-412C-A70A-7D94997DC107}.Release|Any CPU.Build.0 = Release|Any CPU
 		{97BEC969-BB0A-412C-A70A-7D94997DC107}.Release|x86.ActiveCfg = Release|Any CPU
 		{97BEC969-BB0A-412C-A70A-7D94997DC107}.Release|x86.Build.0 = Release|Any CPU
+		{8FD62A32-233A-4A7A-B345-5CED07825B79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FD62A32-233A-4A7A-B345-5CED07825B79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FD62A32-233A-4A7A-B345-5CED07825B79}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8FD62A32-233A-4A7A-B345-5CED07825B79}.Debug|x86.Build.0 = Debug|Any CPU
+		{8FD62A32-233A-4A7A-B345-5CED07825B79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FD62A32-233A-4A7A-B345-5CED07825B79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FD62A32-233A-4A7A-B345-5CED07825B79}.Release|x86.ActiveCfg = Release|Any CPU
+		{8FD62A32-233A-4A7A-B345-5CED07825B79}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -83,6 +93,7 @@ Global
 		{5709EF50-ADA1-49A8-BB72-CB0C1DCEEF1F} = {C9A6FD5F-BE2A-4D96-855D-CBE6FF42AF7A}
 		{988F405C-21CF-447D-B644-6B63DC3EB59B} = {31955DE1-1EE9-468E-9B94-40D141775C79}
 		{97BEC969-BB0A-412C-A70A-7D94997DC107} = {31955DE1-1EE9-468E-9B94-40D141775C79}
+		{8FD62A32-233A-4A7A-B345-5CED07825B79} = {C9A6FD5F-BE2A-4D96-855D-CBE6FF42AF7A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {74200DC0-3246-46CF-BDDC-C95B07E271E0}

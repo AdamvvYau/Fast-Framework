@@ -24,6 +24,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Fast.Framework.DependencyInjection.Extensions;
+using Fast.Framework.DependencyInjection.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,28 +46,9 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOpti
 //注册Http上下文
 builder.Services.AddHttpContextAccessor();
 
-//#region 注册数据访问和业务逻辑服务
-//foreach (var section in builder.Configuration.GetSection("DependencyInjection").GetChildren())
-//{
-//    var serviceDll = Assembly.LoadFrom(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, section["ServiceDll"]));
-//    var ImplementationDll = Assembly.LoadFrom(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, section["ImplementationDll"]));
-//    var types = section.GetSection("Types").GetChildren();
-//    foreach (var type in types)
-//    {
-//        var serviceType = serviceDll.GetType(type["ServiceType"]);
-//        if (serviceType == null)
-//        {
-//            throw new Exception($"服务类型:{type["ServiceType"]} 不存在");
-//        }
-//        var implementationType = ImplementationDll.GetType(type["ImplementationType"]);
-//        if (implementationType == null)
-//        {
-//            throw new Exception($"实现类型:{type["ImplementationType"]} 不存在");
-//        }
-//        builder.Services.AddTransient(serviceType, implementationType);
-//    }
-//}
-//#endregion
+//注册服务
+var injectDll = builder.Configuration.GetSection("DependencyInjection").Get<List<InjectDll>>();
+builder.Services.RegisterServices(injectDll);
 
 
 // 添加测试服务
