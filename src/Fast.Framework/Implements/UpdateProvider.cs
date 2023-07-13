@@ -205,7 +205,6 @@ namespace Fast.Framework
                 },
                 Expression = expression
             });
-
             return this;
         }
 

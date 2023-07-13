@@ -49,7 +49,15 @@ namespace Fast.Framework.Oracle
                             throw new Exception("无更新条件且未获取到KeyAuttribue特性标记属性,安全起见请使用Where相关方法指定更新条件列.");
                         }
                         var sb = new StringBuilder();
-                        sb.AppendFormat(UpdateTemplate, identifier.Insert(1, EntityInfo.TableName), string.Join(",", s.Where(w => !w.IsNotMapped && !w.IsWhere && !w.IsPrimaryKey && !w.IsNavigate).Select(s => $"{identifier.Insert(1, s.ColumnName)} = {symbol}{s.ParameterName}")));
+
+                        var setStrList = s.Where(w => !w.IsNotMapped && !w.IsWhere && !w.IsPrimaryKey && !w.IsNavigate).Select(s => $"{identifier.Insert(1, s.ColumnName)} = {symbol}{s.ParameterName}").ToList();
+
+                        if (!string.IsNullOrWhiteSpace(SetString))
+                        {
+                            setStrList.Add(SetString);
+                        }
+
+                        sb.AppendFormat(UpdateTemplate, identifier.Insert(1, EntityInfo.TableName), string.Join(",", setStrList));
                         sb.Append(' ');
                         sb.AppendFormat(WhereTemplate, string.Join(" AND ", whereColumns.Select(s => $"{identifier.Insert(1, s.ColumnName)} = {symbol}{s.ParameterName}")));
                         return sb.ToString();

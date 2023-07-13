@@ -294,9 +294,12 @@ namespace Fast.Framework.Abstract
 
                 (List<List<List<ColumnInfo>>>, List<IGrouping<int, FastParameter>>) groupData = CommandBatchGroupData();
 
-                var setValues = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsPrimaryKey && !w.IsWhere && !w.IsNavigate).Select(s => $"{identifier.Insert(1, EntityInfo.Alias)}.{identifier.Insert(1, s.ColumnName)} = {identifier.Insert(1, JoinUpdateAlias)}.{identifier.Insert(1, s.ColumnName)}");
+                var setStrList = EntityInfo.ColumnsInfos.Where(w => !w.IsPrimaryKey && !w.IsWhere && !w.IsNotMapped && !w.IsNavigate).Select(s => $"{identifier.Insert(1, EntityInfo.Alias)}.{identifier.Insert(1, s.ColumnName)} = {identifier.Insert(1, JoinUpdateAlias)}.{identifier.Insert(1, s.ColumnName)}").ToList();
 
-                SetString = string.Join(",", setValues);
+                if (!string.IsNullOrWhiteSpace(SetString))
+                {
+                    setStrList.Add(SetString);
+                }
 
                 for (int i = 0; i < groupData.Item1.Count; i++)
                 {
@@ -304,7 +307,7 @@ namespace Fast.Framework.Abstract
                     var unionAll = string.Join("\r\nUNION ALL\r\n", groupData.Item1[i].Select(s => string.Format("SELECT {0}", string.Join(",", s.Select(s => $"{symbol}{s.ParameterName} AS {identifier.Insert(1, s.ColumnName)}")))));
 
                     var batchSql = new StringBuilder();
-                    batchSql.AppendFormat(ListUpdateTemplate, identifier.Insert(1, EntityInfo.TableName), SetString, unionAll, string.Join(" AND ", Where), EntityInfo.Alias, JoinUpdateAlias);
+                    batchSql.AppendFormat(ListUpdateTemplate, identifier.Insert(1, EntityInfo.TableName), string.Join(",", setStrList), unionAll, string.Join(" AND ", Where), EntityInfo.Alias, JoinUpdateAlias);
 
                     commandBatch.SqlString = batchSql.ToString();
                     commandBatch.DbParameters = groupData.Item2[i].ToList();
@@ -332,15 +335,28 @@ namespace Fast.Framework.Abstract
             {
                 var symbol = DbType.GetSymbol();
                 var identifier = DbType.GetIdentifier();
-                if (string.IsNullOrWhiteSpace(SetString))
+
+                if (EntityInfo.TargetObj == null && string.IsNullOrWhiteSpace(SetString))
                 {
-                    var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsPrimaryKey && !w.IsWhere && !w.IsNotMapped);
-                    SetString = $"{string.Join(",", columnInfos.Select(s => $"{identifier.Insert(1, s.ColumnName)} = {symbol}{s.ParameterName}"))}";
+                    throw new Exception("未设置任何列");
+                }
+                else
+                {
+                    var setColumnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsPrimaryKey && !w.IsWhere && !w.IsNotMapped && !w.IsNavigate);
+
+                    var setStrList = setColumnInfos.Select(s => $"{identifier.Insert(1, s.ColumnName)} = {symbol}{s.ParameterName}").ToList();
+
+                    if (!string.IsNullOrWhiteSpace(SetString))
+                    {
+                        setStrList.Add(SetString);
+                    }
+
+                    this.SetString = string.Join(",", setStrList);
                 }
 
                 if ((Where.Count == 0 || IsOptLock) && !AdditionalConditions && EntityInfo.TargetObj != null)
                 {
-                    var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && (w.IsPrimaryKey || w.IsWhere));
+                    var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsNavigate && (w.IsPrimaryKey || w.IsWhere));
                     if (columnInfos.Any())
                     {
                         Where.Add($"{string.Join(" AND ", columnInfos.Select(s => $"{identifier.Insert(1, s.ColumnName)} = {symbol}{s.ParameterName}"))}");

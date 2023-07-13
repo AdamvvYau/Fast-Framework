@@ -66,9 +66,12 @@ WHERE
 
                 (List<List<List<ColumnInfo>>>, List<IGrouping<int, FastParameter>>) groupData = CommandBatchGroupData();
 
-                var setValues = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsPrimaryKey && !w.IsWhere && !w.IsNavigate).Select(s => $"{identifier.Insert(1, s.ColumnName)} = {identifier.Insert(1, JoinUpdateAlias)}.{identifier.Insert(1, s.ColumnName)}");
+                var setStrList = EntityInfo.ColumnsInfos.Where(w => !w.IsPrimaryKey && !w.IsWhere && !w.IsNotMapped && !w.IsNavigate).Select(s => $"{identifier.Insert(1, s.ColumnName)} = {identifier.Insert(1, JoinUpdateAlias)}.{identifier.Insert(1, s.ColumnName)}").ToList();
 
-                SetString = string.Join(",", setValues);
+                if (!string.IsNullOrWhiteSpace(SetString))
+                {
+                    setStrList.Add(SetString);
+                }
 
                 for (int i = 0; i < groupData.Item1.Count; i++)
                 {
@@ -76,7 +79,7 @@ WHERE
                     var unionAll = string.Join("\r\nUNION ALL\r\n", groupData.Item1[i].Select(s => string.Format("SELECT {0}", string.Join(",", s.Select(s => $"{symbol}{s.ParameterName} AS {identifier.Insert(1, s.ColumnName)}")))));
 
                     var batchSql = new StringBuilder();
-                    batchSql.AppendFormat(ListUpdateTemplate, identifier.Insert(1, EntityInfo.TableName), SetString, unionAll, string.Join(" AND ", Where), EntityInfo.Alias, JoinUpdateAlias);
+                    batchSql.AppendFormat(ListUpdateTemplate, identifier.Insert(1, EntityInfo.TableName), string.Join(",", setStrList), unionAll, string.Join(" AND ", Where), EntityInfo.Alias, JoinUpdateAlias);
 
                     commandBatch.SqlString = batchSql.ToString();
                     commandBatch.DbParameters = groupData.Item2[i].ToList();
