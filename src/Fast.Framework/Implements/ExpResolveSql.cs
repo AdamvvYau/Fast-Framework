@@ -494,6 +494,12 @@ namespace Fast.Framework.Implements
                     }
                     else if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAssignment)
                     {
+                        var identifier = ResolveSqlOptions.DbType.GetIdentifier();
+                        if (!ResolveSqlOptions.IgnoreParameter)
+                        {
+                            var lambdaParameterInfo = LambdaParameterInfos.FirstOrDefault(f => f.ParameterType == node.Members[i].DeclaringType);
+                            SqlBuilder.Append($"{identifier.Insert(1, $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}")}.");
+                        }
                         var name = node.Members[i].GetCustomAttribute<ColumnAttribute>(false)?.Name;
                         if (ResolveSqlOptions.IgnoreIdentifier)
                         {
@@ -501,7 +507,7 @@ namespace Fast.Framework.Implements
                         }
                         else
                         {
-                            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? node.Members[i].Name)}");
+                            SqlBuilder.Append($"{identifier.Insert(1, name ?? node.Members[i].Name)}");
                         }
                         SqlBuilder.Append(" = ");
                         Visit(node.Arguments[i]);
@@ -587,6 +593,12 @@ namespace Fast.Framework.Implements
                         }
                         else if (ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAssignment)
                         {
+                            var identifier = ResolveSqlOptions.DbType.GetIdentifier();
+                            if (!ResolveSqlOptions.IgnoreParameter)
+                            {
+                                var lambdaParameterInfo = LambdaParameterInfos.FirstOrDefault(f => f.ParameterType == memberAssignment.Member.DeclaringType);
+                                SqlBuilder.Append($"{identifier.Insert(1, $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}")}.");
+                            }
                             var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
                             if (ResolveSqlOptions.IgnoreIdentifier)
                             {
@@ -594,7 +606,7 @@ namespace Fast.Framework.Implements
                             }
                             else
                             {
-                                SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, name ?? memberAssignment.Member.Name)}");
+                                SqlBuilder.Append($"{identifier.Insert(1, name ?? memberAssignment.Member.Name)}");
                             }
                             SqlBuilder.Append(" = ");
                             Visit(memberAssignment.Expression);

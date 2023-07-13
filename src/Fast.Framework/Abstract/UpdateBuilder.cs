@@ -127,7 +127,15 @@ namespace Fast.Framework.Abstract
             {
                 foreach (var item in this.LambdaExp.ExpressionInfos)
                 {
-                    item.ResolveSqlOptions.IgnoreParameter = true;
+                    if (IsListUpdate && item.ResolveSqlOptions.ResolveSqlType == ResolveSqlType.NewAssignment
+                        && (item.ResolveSqlOptions.DbType == DbType.SQLServer || item.ResolveSqlOptions.DbType == DbType.MySQL))
+                    {
+                        item.ResolveSqlOptions.IgnoreParameter = false;
+                    }
+                    else
+                    {
+                        item.ResolveSqlOptions.IgnoreParameter = true;
+                    }
 
                     item.ResolveSqlOptions.DbParameterStartIndex = DbParameters.Count + 1;
 
@@ -163,7 +171,7 @@ namespace Fast.Framework.Abstract
         {
             var source = EntityInfo.TargetObj as IList;
 
-            var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped).ToList();
+            var columnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsNotMapped && !w.IsNavigate).ToList();
 
             var rowCount = 2000 / columnInfos.Count;//每批次行数
 
@@ -272,7 +280,7 @@ namespace Fast.Framework.Abstract
 
                 if (string.IsNullOrWhiteSpace(EntityInfo.Alias))
                 {
-                    EntityInfo.Alias = "a";
+                    EntityInfo.Alias = "p1";
                 }
 
                 JoinUpdateAlias = $"{EntityInfo.Alias}_0";

@@ -44,7 +44,7 @@ WHERE
 
                 if (string.IsNullOrWhiteSpace(EntityInfo.Alias))
                 {
-                    EntityInfo.Alias = "a";
+                    EntityInfo.Alias = "p1";
                 }
 
                 JoinUpdateAlias = $"{EntityInfo.Alias}_0";
