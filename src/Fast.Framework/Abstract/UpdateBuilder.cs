@@ -344,11 +344,7 @@ namespace Fast.Framework.Abstract
                 var symbol = DbType.GetSymbol();
                 var identifier = DbType.GetIdentifier();
 
-                if (EntityInfo.TargetObj == null && string.IsNullOrWhiteSpace(SetString))
-                {
-                    throw new Exception("未设置任何列");
-                }
-                else
+                if (EntityInfo.TargetObj != null)
                 {
                     var setColumnInfos = EntityInfo.ColumnsInfos.Where(w => !w.IsPrimaryKey && !w.IsWhere && !w.IsNotMapped && !w.IsNavigate);
 
@@ -360,6 +356,11 @@ namespace Fast.Framework.Abstract
                     }
 
                     this.SetString = string.Join(",", setStrList);
+                }
+
+                if (EntityInfo.TargetObj == null && string.IsNullOrWhiteSpace(SetString))
+                {
+                    throw new Exception("未设置任何列");
                 }
 
                 if ((Where.Count == 0 || IsOptLock) && !AdditionalConditions && EntityInfo.TargetObj != null)
