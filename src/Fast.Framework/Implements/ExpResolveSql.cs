@@ -497,7 +497,7 @@ namespace Fast.Framework.Implements
                         var identifier = ResolveSqlOptions.DbType.GetIdentifier();
                         if (!ResolveSqlOptions.IgnoreParameter)
                         {
-                            var lambdaParameterInfo = LambdaParameterInfos.FirstOrDefault(f => f.ParameterType == node.Members[i].DeclaringType);
+                            var lambdaParameterInfo = LambdaParameterInfos[0];
                             SqlBuilder.Append($"{identifier.Insert(1, $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}")}.");
                         }
                         var name = node.Members[i].GetCustomAttribute<ColumnAttribute>(false)?.Name;
@@ -596,7 +596,7 @@ namespace Fast.Framework.Implements
                             var identifier = ResolveSqlOptions.DbType.GetIdentifier();
                             if (!ResolveSqlOptions.IgnoreParameter)
                             {
-                                var lambdaParameterInfo = LambdaParameterInfos.FirstOrDefault(f => f.ParameterType == memberAssignment.Member.DeclaringType);
+                                var lambdaParameterInfo = LambdaParameterInfos[0];
                                 SqlBuilder.Append($"{identifier.Insert(1, $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}")}.");
                             }
                             var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
