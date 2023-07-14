@@ -380,11 +380,24 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
 - 设置列更新
 
   ```c#
-                  db.Update<Product>().SetColumns(c => new Product()
-                  {
-                      ProductCode = "1001",
-                      ProductName = "测试产品1"
-                  }).Where(w => w.ProductId == 1).Exceute();
+              // 设置列更新
+  			db.Update<Product>().SetColumns(c => new Product()
+              {
+                  ProductCode = "1001",
+                  ProductName = "测试产品1"
+              }).Where(w => w.ProductId == 1).Exceute();
+  
+  			// 对象组合设置列更新
+              var product = new Product()
+              {
+                  ProductId = 1,
+                  ProductCode = "1001",
+                  ProductName = "测试商品1"
+              };
+              var result = db.Update(product).SetColumns(c => new Product()
+              {
+                  Custom1 = "测试"
+              }).Exceute();
   ```
   
 - 指定条件更新
@@ -403,11 +416,11 @@ Fast Framework 基于NET6.0 封装的轻量级 ORM 框架 支持多种数据库 
 - 并发更新  乐观锁-版本控制 
 
   ```c#
-                  //注意:仅支持非列表更新 版本列数据类型仅支持 object、string、Guid 时间类型存在精度丢失所以不做支持
-  				var obj = db.Query<Product>().Where(w => w.ProductId == 1).Frist();
-                  obj.Custom1 = "测试版本控制修改";
-  				//参数为 true 更新失败将抛出异常
-                  var result = db.Update(obj).ExceuteWithOptLock(true);
+              //注意:仅支持非列表更新 版本列数据类型仅支持 object、string、Guid 时间类型存在精度丢失所以不做支持
+  			var obj = db.Query<Product>().Where(w => w.ProductId == 1).Frist();
+              obj.Custom1 = "测试版本控制修改";
+  			//参数为 true 更新失败将抛出异常
+              var result = db.Update(obj).ExceuteWithOptLock(true);
   ```
 
   
