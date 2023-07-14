@@ -147,7 +147,7 @@ namespace Fast.Framework.SqlServer
         /// <returns></returns>
         public int BulkCopy(List<T> list)
         {
-            var dataTable = list.ToDataTable(w => w.DatabaseGeneratedOption != DatabaseGeneratedOption.Identity, true);
+            var dataTable = list.ToDataTable(w => w.DatabaseGeneratedOption != DatabaseGeneratedOption.Identity && !w.IsNotMapped && !w.IsNavigate, true);
 
             return BulkCopy(dataTable);
         }
