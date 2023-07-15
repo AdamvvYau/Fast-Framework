@@ -240,7 +240,7 @@ namespace Fast.Framework.Implements
             var sql = InsertBuilder.ToSqlString();
             if (InsertBuilder.IsListInsert)
             {
-                var beginTran = ado.MasterDbCommand.Transaction == null;
+                var beginTran = ado.DbTransaction == null;
                 try
                 {
                     var result = 0;

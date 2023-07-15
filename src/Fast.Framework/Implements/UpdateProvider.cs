@@ -448,7 +448,7 @@ namespace Fast.Framework
             var sql = UpdateBuilder.ToSqlString();
             if (UpdateBuilder.IsListUpdate)
             {
-                var beginTran = ado.MasterDbCommand.Transaction == null;
+                var beginTran = ado.DbTransaction == null;
                 try
                 {
                     var result = 0;

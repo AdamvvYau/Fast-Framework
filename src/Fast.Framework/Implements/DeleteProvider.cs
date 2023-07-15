@@ -9,8 +9,6 @@ using Fast.Framework.Extensions;
 using Fast.Framework.Models;
 using Fast.Framework.Abstract;
 using Fast.Framework.Enum;
-using Fast.Framework.Factory;
-using System.Data.Common;
 
 namespace Fast.Framework.Implements
 {
