@@ -5,15 +5,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
-using Fast.Framework.CustomAttribute;
 using Fast.Framework.Enum;
 using Fast.Framework.Extensions;
 using Fast.Framework.Interfaces;
 using Fast.Framework.Models;
-using Fast.Framework.Utils;
 
 namespace Fast.Framework.Implements
 {
@@ -110,7 +107,7 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         public Expression Visit(Expression node)
         {
-            //Console.WriteLine($"当前访问 {node.NodeType} 类型表达式");
+            //Console.WriteLine($"当前访问 {node?.NodeType} 类型表达式");
             switch (node)
             {
                 case LambdaExpression:
@@ -148,6 +145,10 @@ namespace Fast.Framework.Implements
                 case ListInitExpression:
                     {
                         return Visit(VisitListInit(node as ListInitExpression));
+                    }
+                case ParameterExpression:
+                    {
+                        return VisitParameter(node as ParameterExpression);
                     }
                 case MemberExpression:
                     {
@@ -498,7 +499,16 @@ namespace Fast.Framework.Implements
                         if (!ResolveSqlOptions.IgnoreParameter)
                         {
                             var lambdaParameterInfo = LambdaParameterInfos[0];
-                            SqlBuilder.Append($"{identifier.Insert(1, $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}")}.");
+                            var parameterName = "";
+                            if (ResolveSqlOptions.IgnoreIdentifier)
+                            {
+                                parameterName = $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}";
+                            }
+                            else
+                            {
+                                parameterName = identifier.Insert(1, $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}");
+                            }
+                            SqlBuilder.Append($"{parameterName}.");
                         }
                         var name = node.Members[i].GetCustomAttribute<ColumnAttribute>(false)?.Name;
                         if (ResolveSqlOptions.IgnoreIdentifier)
@@ -597,7 +607,16 @@ namespace Fast.Framework.Implements
                             if (!ResolveSqlOptions.IgnoreParameter)
                             {
                                 var lambdaParameterInfo = LambdaParameterInfos[0];
-                                SqlBuilder.Append($"{identifier.Insert(1, $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}")}.");
+                                var parameterName = "";
+                                if (ResolveSqlOptions.IgnoreIdentifier)
+                                {
+                                    parameterName = $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}";
+                                }
+                                else
+                                {
+                                    parameterName = identifier.Insert(1, $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}");
+                                }
+                                SqlBuilder.Append($"{parameterName}.");
                             }
                             var name = memberAssignment.Member.GetCustomAttribute<ColumnAttribute>(false)?.Name;
                             if (ResolveSqlOptions.IgnoreIdentifier)
@@ -671,6 +690,59 @@ namespace Fast.Framework.Implements
         }
 
         /// <summary>
+        /// 参数名称处理
+        /// </summary>
+        /// <param name="name">名称</param>
+        /// <returns></returns>
+        private string ParameterNameHandle(string name)
+        {
+            var parameterName = "";
+            if (LambdaParameterInfos.Any(a => a.ParameterName == name))
+            {
+                var lambdaParameterInfo = LambdaParameterInfos.First(f => f.ParameterName == name);
+                parameterName = ResolveSqlOptions.UseCustomParameter ? $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}" : lambdaParameterInfo.ResolveName;
+            }
+            else if (ResolveSqlOptions.ParentLambdaParameterInfos.Any(a => a.ParameterName == name))
+            {
+                var parentLambdaParameterInfo = ResolveSqlOptions.ParentLambdaParameterInfos.First(f => f.ParameterName == name);
+                parentLambdaParameterInfo.IsUsing = true;//标记为被引用
+                parameterName = ResolveSqlOptions.UseCustomParameter ? $"{parentLambdaParameterInfo.ResolveName}{parentLambdaParameterInfo.ParameterIndex}" : parentLambdaParameterInfo.ResolveName;
+            }
+            else
+            {
+                throw new ArgumentException($"无法解析参数名称:{name},请检查作用域是否超出范围.");
+            }
+            if (ResolveSqlOptions.IgnoreIdentifier)
+            {
+                return parameterName;
+            }
+            else
+            {
+                var identifier = ResolveSqlOptions.DbType.GetIdentifier();
+                parameterName = identifier.Insert(1, parameterName);
+            }
+            return parameterName;
+        }
+
+        /// <summary>
+        /// 访问参数表达式
+        /// </summary>
+        /// <param name="node">节点</param>
+        /// <returns></returns>
+        private Expression VisitParameter(ParameterExpression node)
+        {
+            if (bodyExpression.NodeType == ExpressionType.Parameter)
+            {
+                SqlBuilder.Append($"{ParameterNameHandle(node.Name)}.*");
+            }
+            else if (!ResolveSqlOptions.IgnoreParameter)
+            {
+                SqlBuilder.Append($"{ParameterNameHandle(node.Name)}.");
+            }
+            return null;
+        }
+
+        /// <summary>
         /// 访问成员表达式
         /// </summary>
         /// <param name="node">节点</param>
@@ -701,34 +773,7 @@ namespace Fast.Framework.Implements
             {
                 if (node.Expression.NodeType == ExpressionType.Parameter)
                 {
-                    if (!ResolveSqlOptions.IgnoreParameter)
-                    {
-                        var parameterExpression = node.Expression as ParameterExpression;
-                        var parameterName = "";
-                        if (LambdaParameterInfos.Any(a => a.ParameterName == parameterExpression.Name))
-                        {
-                            var lambdaParameterInfo = LambdaParameterInfos.First(f => f.ParameterName == parameterExpression.Name);
-                            parameterName = ResolveSqlOptions.UseCustomParameter ? $"{lambdaParameterInfo.ResolveName}{lambdaParameterInfo.ParameterIndex}" : lambdaParameterInfo.ResolveName;
-                        }
-                        else if (ResolveSqlOptions.ParentLambdaParameterInfos.Any(a => a.ParameterName == parameterExpression.Name))
-                        {
-                            var parentLambdaParameterInfo = ResolveSqlOptions.ParentLambdaParameterInfos.First(f => f.ParameterName == parameterExpression.Name);
-                            parentLambdaParameterInfo.IsUsing = true;//标记为被引用
-                            parameterName = ResolveSqlOptions.UseCustomParameter ? $"{parentLambdaParameterInfo.ResolveName}{parentLambdaParameterInfo.ParameterIndex}" : parentLambdaParameterInfo.ResolveName;
-                        }
-                        else
-                        {
-                            throw new ArgumentException($"无法解析参数名称:{parameterExpression.Name},请检查作用域是否超出范围.");
-                        }
-                        if (ResolveSqlOptions.IgnoreIdentifier)
-                        {
-                            SqlBuilder.Append($"{parameterName}.");
-                        }
-                        else
-                        {
-                            SqlBuilder.Append($"{ResolveSqlOptions.DbType.GetIdentifier().Insert(1, $"{parameterName}")}.");
-                        }
-                    }
+                    Visit(node.Expression);
                     var memberName = node.Member.Name;
                     if (!ResolveSqlOptions.IgnoreColumnAttribute)
                     {
@@ -778,6 +823,7 @@ namespace Fast.Framework.Implements
                     }
                     #endregion
 
+                    return null;
                 }
                 else if (node.Expression.NodeType == ExpressionType.MemberAccess || node.Expression.NodeType == ExpressionType.Constant)
                 {
@@ -794,11 +840,8 @@ namespace Fast.Framework.Implements
                         ArrayIndex = arrayIndexs,
                         MemberInfo = node.Member
                     });
-
-                    return Visit(Expression.Constant(GetValue.Visit(node.Expression)));
                 }
             }
-
             if (arrayIndexs.Count > 0)
             {
                 arrayIndexs = new Stack<int>();
