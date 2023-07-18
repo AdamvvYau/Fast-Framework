@@ -749,14 +749,6 @@ namespace Fast.Framework.Implements
         /// <returns></returns>
         private Expression VisitMember(MemberExpression node)
         {
-            #region 多级访问限制
-            if (node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter && memberInfos.Count > 0)
-            {
-                var parameterExpression = node.Expression as ParameterExpression;
-                throw new Exception($"不支持{parameterExpression.Name}.{node.Member.Name}.{memberInfos.Pop().MemberInfo.Name}多级访问.");
-            }
-            #endregion
-
             #region Datetime特殊处理
             if (node.Type.Equals(typeof(DateTime)) && node.Expression == null)
             {
@@ -773,6 +765,8 @@ namespace Fast.Framework.Implements
             {
                 if (node.Expression.NodeType == ExpressionType.Parameter)
                 {
+                    memberInfos.Clear();
+
                     Visit(node.Expression);
                     var memberName = node.Member.Name;
                     if (!ResolveSqlOptions.IgnoreColumnAttribute)
@@ -789,7 +783,8 @@ namespace Fast.Framework.Implements
                     }
                     else
                     {
-                        SqlBuilder.Append(ResolveSqlOptions.DbType.GetIdentifier().Insert(1, memberName));
+                        var identifier = ResolveSqlOptions.DbType.GetIdentifier();
+                        SqlBuilder.Append(identifier.Insert(1, memberName));
                     }
 
                     #region 解析布尔类型特殊处理

@@ -23,6 +23,10 @@ namespace Fast.Framework.Extensions
         /// <returns></returns>
         public static object GetValue(this MemberInfo memberInfo, object obj)
         {
+            if (obj == null)
+            {
+                return null;
+            }
             if (memberInfo.MemberType == MemberTypes.Property)
             {
                 var propertyInfo = memberInfo as PropertyInfo;
